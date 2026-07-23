@@ -9,6 +9,24 @@ from a raw dataset to useful summaries and charts. Every function does exactly
 one thing, has a conventional name, and returns a standard pandas or matplotlib
 object, so the library stays easy to read, test, and debug.
 
+## Gallery
+
+A hand-drawn, editorial look — muted earthy palette, bold outlines, rounded
+shapes, arrow-tipped axes — in both light and dark themes.
+
+The six chart styles (`python examples/gallery.py`):
+
+| Light | Dark |
+| --- | --- |
+| ![Chart styles, light theme](docs/images/styles-light.png) | ![Chart styles, dark theme](docs/images/styles-dark.png) |
+
+Color used deliberately — single series, multiple series, highlight, and
+positive/negative (`python examples/color_system.py`):
+
+| Light | Dark |
+| --- | --- |
+| ![Color system, light theme](docs/images/colors-light.png) | ![Color system, dark theme](docs/images/colors-dark.png) |
+
 ## Installation
 
 From a local clone (editable install for development):
