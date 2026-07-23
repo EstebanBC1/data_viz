@@ -57,29 +57,49 @@ python examples/gallery.py --show   # or open interactive windows
 
 ## Design system
 
-The defaults aim for a quiet, precise, presentation-ready look — the data is
-the loudest element, chrome recedes to hairlines, and the palette is restrained
-and colorblind-safe. Three themes ship — **`light`**, **`dark`**, and **`warm`**
-(an editorial cream-paper surface) — all sharing the same colorblind-safe hue
-order (validated with the dataviz skill's palette checker).
+The design language is **neutral-first**: roughly 80–90% of every chart is
+neutral (backgrounds, ink, gridlines, axes are white/near-white/charcoal and
+gray). **Color is spent deliberately** — on the primary series, a highlighted
+item, a category, or a status — never as decoration. Blue is the accent of
+emphasis, not a theme. Two themes ship: **`light`** and **`dark`**.
 
-`area_plot` uses a theme-aware depth gradient by default (`gradient=True`): the
-full series color under the line eases to a light tint at the baseline, at high
-opacity for a solid, shaded look. Pass `gradient=False` for a flat wash.
-
-**Tokens.** Each theme is a small dictionary of design tokens (the single source
-of truth for the look):
+**Color tokens** (read any with `dv.theme_tokens()`):
 
 | Token | Role |
 | --- | --- |
-| `surface` / `page` | chart and figure backgrounds |
-| `primary` / `secondary` / `muted` | text and de-emphasized ink |
-| `grid` / `baseline` | hairline gridlines and axis spines |
-| `series` | the categorical color order (assigned in sequence, never cycled) |
+| `surface` / `page` | chart & figure backgrounds — neutral |
+| `primary` / `secondary` / `muted` | text ink — near-black/white and gray |
+| `grid` / `baseline` | hairline gridlines and axis spines — subtle gray |
+| `accent` | the one point of emphasis — **blue `#007AFF`** |
+| `series` | the 6-color categorical palette (stable identity) |
+| `good` / `warning` / `bad` / `neutral` | reserved semantic colors |
+| `context` / `reference` | de-emphasized comparison series & baselines |
 
-The `series` order is colorblind-safe: the first *N* colors of any chart stay
-distinguishable. Read them with `dv.theme_tokens()` and reuse them in your own
-drawing (e.g. `dv.theme_tokens()["series"][0]` for a highlight color).
+**Series palette** — stable identity across the library (series 1 is always
+blue, 2 orange, …), identical in light and dark so a color means one thing:
+
+| 1 blue | 2 orange | 3 green | 4 purple | 5 red | 6 teal |
+| --- | --- | --- | --- | --- | --- |
+| `#007AFF` | `#FF9500` | `#34C759` | `#AF52DE` | `#FF3B30` | `#5AC8FA` |
+
+**Where color is (and isn't) used**
+
+- **Single series** → the accent blue (the subject is the emphasis).
+- **Multiple series** → the palette in order, always paired with a marker,
+  line style, or direct label (never color alone). `line_plot(..., marker="o",
+  linestyle="--")`.
+- **Highlight a comparison** → the focus series in `accent`, the rest in
+  `context` gray at low `alpha`; or `bar_plot(..., highlight="East")`.
+- **Positive / negative** → `bar_plot(..., by_sign=True)` colors bars
+  green/red by sign and adds a zero reference line.
+- **Semantic** → `good`/`warning`/`bad`/`neutral` are reserved for meaning and
+  never reused as another series color.
+
+Run `python examples/color_system.py` to render all of these in both themes.
+
+`area_plot` uses a theme-aware depth gradient by default (`gradient=True`): the
+accent color under the line eases to a light tint at the baseline. Pass
+`gradient=False` for a flat wash.
 
 **What the defaults do**
 

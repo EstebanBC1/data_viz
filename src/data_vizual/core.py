@@ -61,69 +61,65 @@ _FONT_STACK = [
     "DejaVu Sans",
 ]
 
+# The design language is NEUTRAL-FIRST: ~80–90% of every chart is neutral
+# (surfaces, ink, gridlines, axes). Color is spent deliberately — on the
+# primary series, a highlighted item, a category, or a status — never as
+# decoration. Blue is the accent of emphasis, not a background or a default for
+# everything.
+#
+# Series colors are STABLE across the library: series 1 is always blue, series 2
+# always orange, and so on, in both light and dark, so a color means the same
+# thing everywhere. Per the never-color-alone rule, series color is always
+# paired with a marker, line style, or direct label by the caller.
+_APPLE_PALETTE = [
+    "#007AFF",  # 1 blue   (also the accent / primary-emphasis color)
+    "#FF9500",  # 2 orange
+    "#34C759",  # 3 green
+    "#AF52DE",  # 4 purple
+    "#FF3B30",  # 5 red
+    "#5AC8FA",  # 6 teal
+]
+
+# Semantic colors are reserved for meaning and never reused as "series 7".
+_SEMANTIC = {
+    "good": "#34C759",     # positive / success
+    "warning": "#FF9500",  # caution
+    "bad": "#FF3B30",      # negative / failure / destructive
+    "neutral": "#86868B",  # neutral / inactive
+}
+
 _THEMES: dict[str, dict] = {
     "light": {
-        "surface": "#fcfcfb",   # chart background
-        "page": "#f9f9f7",      # figure background (a touch off the surface)
-        "primary": "#0b0b0b",   # titles / strongest text
-        "secondary": "#52514e",  # axis labels / tick text
-        "muted": "#898781",     # ticks / de-emphasized marks
-        "grid": "#e1e0d9",      # hairline gridlines
-        "baseline": "#c3c2b7",  # axis spines
-        # Colorblind-safe categorical order (assign in sequence, do not cycle).
-        "series": [
-            "#0a84ff",  # blue
-            "#eb6834",  # orange
-            "#1baf7a",  # aqua
-            "#eda100",  # yellow
-            "#e87ba4",  # magenta
-            "#008300",  # green
-            "#4a3aa7",  # violet
-            "#e34948",  # red
-        ],
-    },
-    "warm": {
-        # An editorial, print-magazine feel: a warm paper surface with the
-        # same colorblind-safe hue order, which stays legible on cream
-        # (validated against surface #f7f0e1). Inspired by warm data-journalism
-        # charts rather than any single publication's branding.
-        "surface": "#f7f0e1",   # warm cream "paper"
-        "page": "#f2ead8",      # a touch deeper than the surface
-        "primary": "#2a2620",   # warm near-black
-        "secondary": "#6b6154",
-        "muted": "#9c9184",
-        "grid": "#e6dcc7",      # hairline grid, warm
-        "baseline": "#cdc2a9",
-        "series": [
-            "#0a84ff",  # blue
-            "#eb6834",  # orange
-            "#1baf7a",  # aqua
-            "#eda100",  # yellow
-            "#e87ba4",  # magenta
-            "#008300",  # green
-            "#4a3aa7",  # violet
-            "#e34948",  # red
-        ],
+        # Neutral surfaces and ink (Apple-like near-black on white).
+        "surface": "#ffffff",   # chart background — pure neutral
+        "page": "#f5f5f7",      # figure background — near-white
+        "primary": "#1d1d1f",   # titles / strongest text (near-black)
+        "secondary": "#6e6e73",  # axis labels / tick text (gray)
+        "muted": "#86868b",     # ticks / de-emphasized (gray)
+        "grid": "#e8e8ed",      # hairline gridlines (subtle gray)
+        "baseline": "#d2d2d7",  # axis spines (subtle gray)
+        # Deliberate color.
+        "accent": "#007AFF",    # the one point of emphasis (primary series)
+        "series": list(_APPLE_PALETTE),
+        # Comparison roles.
+        "context": "#86868B",   # de-emphasized "context" series (use with alpha)
+        "reference": "#d2d2d7",  # baselines / reference lines
+        **_SEMANTIC,
     },
     "dark": {
-        "surface": "#1a1a19",
-        "page": "#0d0d0d",
-        "primary": "#ffffff",
-        "secondary": "#c3c2b7",
-        "muted": "#898781",
-        "grid": "#2c2c2a",
-        "baseline": "#383835",
-        # Same eight hues, re-stepped for legibility on the dark surface.
-        "series": [
-            "#0a84ff",  # blue
-            "#d95926",  # orange
-            "#199e70",  # aqua
-            "#c98500",  # yellow
-            "#d55181",  # magenta
-            "#008300",  # green
-            "#9085e9",  # violet
-            "#e66767",  # red
-        ],
+        # Neutral charcoal/black surfaces with light ink.
+        "surface": "#1c1c1e",   # chart background — charcoal
+        "page": "#000000",      # figure background — black
+        "primary": "#f5f5f7",   # titles / strongest text (near-white)
+        "secondary": "#aeaeb2",  # axis labels / tick text (gray)
+        "muted": "#8e8e93",     # ticks / de-emphasized (gray)
+        "grid": "#2c2c2e",      # hairline gridlines (subtle gray)
+        "baseline": "#3a3a3c",  # axis spines (subtle gray)
+        "accent": "#007AFF",    # same blue identity as light
+        "series": list(_APPLE_PALETTE),  # identical hues -> stable identity
+        "context": "#86868B",
+        "reference": "#48484a",  # darker reference gray for the dark surface
+        **_SEMANTIC,
     },
 }
 
@@ -544,10 +540,16 @@ def line_plot(
     title: str | None = None,
     color: str | None = None,
     label: str | None = None,
+    alpha: float = 1.0,
+    marker: str | None = None,
+    linestyle: str = "-",
 ) -> plt.Axes:
     """Draw a line chart of ``y`` against ``x``.
 
-    Best for showing how a value changes over an ordered axis such as time.
+    Best for showing how a value changes over an ordered axis such as time. On a
+    fresh Axes the first line takes the accent blue (a single series is the one
+    point of emphasis); call it repeatedly on the same ``ax`` to add more series,
+    each taking the next stable palette color.
 
     Parameters
     ----------
@@ -562,8 +564,19 @@ def line_plot(
         Optional headline stating the chart's single takeaway.
     color:
         Optional line color. Defaults to the next color in the theme cycle.
+        Pass ``theme_tokens()["context"]`` (with a lower ``alpha``) to render a
+        de-emphasized context series in a comparison.
     label:
-        Optional series name (used by a legend if you add one).
+        Optional series name (used by a legend or direct label).
+    alpha:
+        Line opacity. Lower it (e.g. 0.5) to push a context series back.
+    marker:
+        Optional point marker (e.g. ``"o"``, ``"s"``, ``"^"``). Pairing each
+        series with a distinct marker keeps them distinguishable without relying
+        on color alone.
+    linestyle:
+        Line style (e.g. ``"-"``, ``"--"``, ``":"``) — another color-free way to
+        tell series apart.
 
     Returns
     -------
@@ -575,7 +588,8 @@ def line_plot(
         return _render_empty(ax)
     _require_columns(df, [x, y])
 
-    ax.plot(df[x], df[y], color=color, label=label)
+    ax.plot(df[x], df[y], color=color, label=label, alpha=alpha,
+            marker=marker, linestyle=linestyle)
     ax.set_xlabel(x)
     ax.set_ylabel(y)
     return _finish(ax, title)
@@ -684,7 +698,7 @@ def area_plot(
     _require_columns(df, [x, y])
 
     tokens = theme_tokens()
-    fill_color = color or tokens["series"][0]
+    fill_color = color or tokens["accent"]
 
     # A crisp 2px top edge defines the value; the fill below carries the depth.
     ax.plot(df[x], df[y], color=fill_color, zorder=3)
@@ -707,10 +721,21 @@ def bar_plot(
     ax: plt.Axes | None = None,
     title: str | None = None,
     color: str | None = None,
+    by_sign: bool = False,
+    highlight: object | None = None,
 ) -> plt.Axes:
     """Draw a bar chart of ``y`` for each category in ``x``.
 
     Best for comparing a numeric value across a set of discrete categories.
+
+    By default all bars share the accent color (a single measure). Two options
+    add *meaning* to the color instead of decoration:
+
+    - ``by_sign=True`` colors each bar by the sign of ``y`` — green for
+      positive, red for negative — and draws a zero reference line. Use for
+      change / delta charts.
+    - ``highlight=<category>`` paints every bar neutral gray except the named
+      category, which takes the accent color. Use to point at one bar.
 
     Parameters
     ----------
@@ -726,7 +751,12 @@ def bar_plot(
     title:
         Optional headline stating the chart's single takeaway.
     color:
-        Optional bar color. Defaults to the theme's first categorical color.
+        Optional single bar color (ignored when ``by_sign`` or ``highlight`` is
+        set). Defaults to the accent color.
+    by_sign:
+        Color bars green/red by the sign of ``y`` and add a zero line.
+    highlight:
+        A value in ``x``; that bar is accent-colored and the rest neutral gray.
 
     Returns
     -------
@@ -739,15 +769,29 @@ def bar_plot(
     _require_columns(df, [x, y])
 
     tokens = theme_tokens()
+    if by_sign:
+        # Semantic color: the sign IS the message (positive vs negative).
+        colors = [tokens["good"] if v >= 0 else tokens["bad"] for v in df[y]]
+    elif highlight is not None:
+        # Neutral-first: gray context, accent only on the bar being pointed at.
+        colors = [tokens["accent"] if cat == highlight else tokens["neutral"]
+                  for cat in df[x]]
+    else:
+        colors = color or tokens["accent"]
+
     # A 2px surface-colored edge reads as a clean gap between neighbors rather
     # than a heavy stroke; bars capped in width so the slot keeps some air.
     ax.bar(
         df[x], df[y],
-        color=color or tokens["series"][0],
+        color=colors,
         edgecolor=tokens["surface"],
         linewidth=1.0,
         width=0.7,
     )
+    if by_sign:
+        # A quiet zero reference so positive/negative read against a baseline.
+        ax.axhline(0, color=tokens["reference"], linewidth=1.0, zorder=1)
+
     ax.set_xlabel(x)
     ax.set_ylabel(y)
     return _finish(ax, title)
@@ -795,7 +839,7 @@ def histogram(
     tokens = theme_tokens()
     ax.hist(
         df[column], bins=bins,
-        color=color or tokens["series"][0],
+        color=color or tokens["accent"],
         edgecolor=tokens["surface"],
         linewidth=1.0,
     )
@@ -845,7 +889,7 @@ def scatter_plot(
     # adding a heavy border.
     ax.scatter(
         df[x], df[y],
-        color=color or tokens["series"][0],
+        color=color or tokens["accent"],
         s=42,
         edgecolors=tokens["surface"],
         linewidths=0.8,

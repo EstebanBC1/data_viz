@@ -82,7 +82,42 @@ def test_summary_statistics(df):
 
 
 def test_available_themes():
-    assert set(dv.available_themes()) == {"light", "dark", "warm"}
+    assert set(dv.available_themes()) == {"light", "dark"}
+
+
+def test_series_palette_is_stable_across_themes():
+    # A series color means the same thing in light and dark (stable identity).
+    assert dv.theme_tokens("light")["series"] == dv.theme_tokens("dark")["series"]
+    assert dv.theme_tokens("light")["series"][0] == "#007AFF"
+
+
+def test_semantic_tokens_present():
+    tokens = dv.theme_tokens("light")
+    for role in ("good", "warning", "bad", "neutral", "accent", "context",
+                 "reference"):
+        assert role in tokens
+
+
+def test_bar_by_sign_colors_and_zero_line():
+    d = pd.DataFrame({"q": ["A", "B", "C"], "delta": [12, -5, 8]})
+    ax = dv.bar_plot(d, x="q", y="delta", by_sign=True)
+    good, bad = dv.theme_tokens()["good"], dv.theme_tokens()["bad"]
+    facecolors = [p.get_facecolor() for p in ax.patches]
+    assert plt.matplotlib.colors.to_hex(facecolors[0]).lower() == good.lower()
+    assert plt.matplotlib.colors.to_hex(facecolors[1]).lower() == bad.lower()
+    # A zero reference line was added.
+    assert any(abs(ln.get_ydata()[0]) < 1e-9 for ln in ax.lines)
+
+
+def test_bar_highlight_uses_neutral_for_others():
+    d = pd.DataFrame({"region": ["N", "S", "E"], "sales": [3, 5, 4]})
+    ax = dv.bar_plot(d, x="region", y="sales", highlight="S")
+    accent = dv.theme_tokens()["accent"]
+    neutral = dv.theme_tokens()["neutral"]
+    hexes = [plt.matplotlib.colors.to_hex(p.get_facecolor()).lower()
+             for p in ax.patches]
+    assert hexes[1] == accent.lower()      # highlighted
+    assert hexes[0] == neutral.lower()     # context
 
 
 def test_theme_tokens_are_copies():
@@ -105,7 +140,7 @@ def test_set_theme_updates_color_cycle():
 
 def test_set_theme_returns_tokens():
     tokens = dv.set_theme("light")
-    assert tokens["surface"] == "#fcfcfb"
+    assert tokens["surface"] == "#ffffff"
 
 
 # --- Plots -----------------------------------------------------------------
