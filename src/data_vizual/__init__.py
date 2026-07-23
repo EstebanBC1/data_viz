@@ -14,6 +14,7 @@ the public API is flat and easy to discover.
 """
 
 from .core import (
+    area_plot,
     available_themes,
     bar_plot,
     column_types,
@@ -45,6 +46,7 @@ __all__ = [
     "summary_statistics",
     # Plots
     "line_plot",
+    "area_plot",
     "bar_plot",
     "histogram",
     "scatter_plot",

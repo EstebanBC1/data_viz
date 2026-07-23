@@ -42,6 +42,7 @@ dv.summary_statistics(df)    # count / mean / std / min / quartiles / max
 ax = dv.histogram(df, "revenue", bins=20, title="Revenue is right-skewed")
 
 dv.line_plot(df, x="day", y="revenue", title="Revenue climbed all year")
+dv.area_plot(df, x="day", y="revenue")   # gradient fill adds depth
 dv.bar_plot(df, x="region", y="revenue")
 dv.scatter_plot(df, x="ad_spend", y="revenue")
 ```
@@ -58,7 +59,13 @@ python examples/gallery.py --show   # or open interactive windows
 
 The defaults aim for a quiet, precise, presentation-ready look — the data is
 the loudest element, chrome recedes to hairlines, and the palette is restrained
-and colorblind-safe. Both **light and dark** themes ship.
+and colorblind-safe. Three themes ship — **`light`**, **`dark`**, and **`warm`**
+(an editorial cream-paper surface) — all sharing the same colorblind-safe hue
+order (validated with the dataviz skill's palette checker).
+
+`area_plot` uses a theme-aware depth gradient by default (`gradient=True`): the
+full series color under the line eases to a light tint at the baseline, at high
+opacity for a solid, shaded look. Pass `gradient=False` for a flat wash.
 
 **Tokens.** Each theme is a small dictionary of design tokens (the single source
 of truth for the look):
@@ -111,6 +118,7 @@ own figures (e.g. small multiples, like the gallery).
 | `missing_value_counts(df)` | Missing values per column, sorted descending. |
 | `summary_statistics(df)` | Descriptive stats for numeric columns. |
 | `line_plot(df, x, y, ax=None)` | Line chart of `y` over `x`. |
+| `area_plot(df, x, y, gradient=True)` | Filled area with a subtle depth gradient (`gradient=False` for a flat wash). |
 | `bar_plot(df, x, y, ax=None)` | Bar chart of `y` per category `x`. |
 | `histogram(df, column, bins=10, ax=None)` | Distribution of one numeric column. |
 | `scatter_plot(df, x, y, ax=None)` | Relationship between two numeric columns. |

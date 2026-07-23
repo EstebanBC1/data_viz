@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -63,10 +64,14 @@ def build_gallery(mode: str, data: dict[str, pd.DataFrame]) -> plt.Figure:
         color=tokens["primary"],
     )
 
-    dv.line_plot(
+    area_ax = dv.area_plot(
         data["trend"], x="month", y="revenue", ax=axes[0, 0],
         title="Revenue grew steadily through 2026",
     )
+    # Thin the monthly date ticks so labels don't collide in a narrow panel
+    # (tick density depends on panel width, so it's set here, not in the library).
+    area_ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
+    area_ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
     dv.bar_plot(
         data["regions"], x="region", y="sales", ax=axes[0, 1],
         title="East leads regional sales",

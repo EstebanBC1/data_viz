@@ -82,7 +82,7 @@ def test_summary_statistics(df):
 
 
 def test_available_themes():
-    assert set(dv.available_themes()) == {"light", "dark"}
+    assert set(dv.available_themes()) == {"light", "dark", "warm"}
 
 
 def test_theme_tokens_are_copies():
@@ -117,6 +117,20 @@ def test_line_plot_returns_axes(df):
     ax = dv.line_plot(df, x="day", y="revenue")
     assert ax.get_xlabel() == "day"
     assert len(ax.lines) == 1
+
+
+def test_area_plot_gradient_returns_axes(df):
+    ax = dv.area_plot(df, x="day", y="revenue")
+    # Crisp top edge is a line; the gradient fill is an image below it.
+    assert len(ax.lines) == 1
+    assert len(ax.images) == 1
+
+
+def test_area_plot_flat_fill(df):
+    ax = dv.area_plot(df, x="day", y="revenue", gradient=False)
+    # Flat wash uses fill_between (a PolyCollection), no gradient image.
+    assert len(ax.images) == 0
+    assert len(ax.collections) >= 1
 
 
 def test_bar_plot_returns_axes(df):

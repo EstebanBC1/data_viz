@@ -31,7 +31,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Sequence
 
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from cycler import cycler
 from matplotlib.ticker import FuncFormatter
@@ -70,7 +72,30 @@ _THEMES: dict[str, dict] = {
         "baseline": "#c3c2b7",  # axis spines
         # Colorblind-safe categorical order (assign in sequence, do not cycle).
         "series": [
-            "#2a78d6",  # blue
+            "#0a84ff",  # blue
+            "#eb6834",  # orange
+            "#1baf7a",  # aqua
+            "#eda100",  # yellow
+            "#e87ba4",  # magenta
+            "#008300",  # green
+            "#4a3aa7",  # violet
+            "#e34948",  # red
+        ],
+    },
+    "warm": {
+        # An editorial, print-magazine feel: a warm paper surface with the
+        # same colorblind-safe hue order, which stays legible on cream
+        # (validated against surface #f7f0e1). Inspired by warm data-journalism
+        # charts rather than any single publication's branding.
+        "surface": "#f7f0e1",   # warm cream "paper"
+        "page": "#f2ead8",      # a touch deeper than the surface
+        "primary": "#2a2620",   # warm near-black
+        "secondary": "#6b6154",
+        "muted": "#9c9184",
+        "grid": "#e6dcc7",      # hairline grid, warm
+        "baseline": "#cdc2a9",
+        "series": [
+            "#0a84ff",  # blue
             "#eb6834",  # orange
             "#1baf7a",  # aqua
             "#eda100",  # yellow
@@ -90,7 +115,7 @@ _THEMES: dict[str, dict] = {
         "baseline": "#383835",
         # Same eight hues, re-stepped for legibility on the dark surface.
         "series": [
-            "#3987e5",  # blue
+            "#0a84ff",  # blue
             "#d95926",  # orange
             "#199e70",  # aqua
             "#c98500",  # yellow
@@ -553,6 +578,125 @@ def line_plot(
     ax.plot(df[x], df[y], color=color, label=label)
     ax.set_xlabel(x)
     ax.set_ylabel(y)
+    return _finish(ax, title)
+
+
+def _x_to_numbers(values: pd.Series) -> np.ndarray:
+    """Convert an x column to floats matplotlib can place on an axis.
+
+    Dates become matplotlib date numbers (the same units the axis uses), so a
+    gradient image lines up with the plotted line. Everything else is coerced
+    to float.
+    """
+    if np.issubdtype(np.asarray(values).dtype, np.datetime64):
+        return mdates.date2num(values)
+    return np.asarray(values, dtype=float)
+
+
+def _blend(color_a: str, color_b: str, weight: float) -> tuple[float, float, float]:
+    """Mix two colors: ``weight`` of ``color_b`` into ``color_a`` (0..1)."""
+    a = np.array(plt.matplotlib.colors.to_rgb(color_a))
+    b = np.array(plt.matplotlib.colors.to_rgb(color_b))
+    return tuple(a * (1 - weight) + b * weight)
+
+
+def _gradient_fill(ax: plt.Axes, x: np.ndarray, y: np.ndarray, color: str) -> None:
+    """Fill under a curve with a rich vertical *color* gradient for depth.
+
+    Rather than fading to transparent, the fill shifts hue top-to-bottom: the
+    full series color sits just under the line, easing to a lighter tint of the
+    same color toward the baseline. The tint blends toward the theme surface, so
+    the effect reads as depth in both light and dark modes. Opacity stays high
+    (a solid fill), giving the "shaded" look of an editorial area chart while
+    the crisp top edge keeps the value legible.
+    """
+    tokens = theme_tokens()
+    baseline = min(0.0, float(np.nanmin(y)))
+
+    # Row 0 is the baseline (origin="lower"): a light tint of the color; the top
+    # row under the line is the full color. 60% toward the surface at the base
+    # gives a clear gradient without washing the color out entirely.
+    bottom_rgb = _blend(color, tokens["surface"], 0.60)
+    top_rgb = plt.matplotlib.colors.to_rgb(color)
+
+    ramp = np.linspace(0.0, 1.0, 256)[:, None]           # 0 at baseline, 1 at top
+    gradient = np.empty((256, 1, 4))
+    gradient[:, 0, :3] = np.array(bottom_rgb) + ramp * (np.array(top_rgb) - bottom_rgb)
+    gradient[:, 0, 3] = 0.35 + ramp[:, 0] * 0.55         # 0.35 -> 0.90 opacity
+
+    image = ax.imshow(
+        gradient, aspect="auto", origin="lower",
+        extent=[x.min(), x.max(), baseline, float(np.nanmax(y))],
+        zorder=1,
+    )
+    # Clip the image to the polygon under the curve so only that region shows.
+    vertices = np.column_stack([np.concatenate([x, x[::-1]]),
+                                np.concatenate([y, np.full_like(y, baseline)])])
+    clip = plt.Polygon(vertices, closed=True, transform=ax.transData)
+    image.set_clip_path(clip)
+
+
+def area_plot(
+    df: pd.DataFrame,
+    x: str,
+    y: str,
+    ax: plt.Axes | None = None,
+    title: str | None = None,
+    color: str | None = None,
+    gradient: bool = True,
+) -> plt.Axes:
+    """Draw a filled area chart of ``y`` against ``x``, with optional depth.
+
+    Like :func:`line_plot`, but the region under the line is filled. By default
+    the fill uses a subtle vertical gradient (richer under the line, fading to
+    the baseline) that adds depth without shouting. Set ``gradient=False`` for a
+    flat, low-opacity wash instead.
+
+    Best for emphasizing magnitude over time — the area reads as "how much",
+    while the crisp top edge keeps the exact value legible.
+
+    Parameters
+    ----------
+    df:
+        The data to plot.
+    x, y:
+        Column names for the horizontal and vertical axes.
+    ax:
+        Optional existing Axes to draw on. If omitted, a new themed figure is
+        created.
+    title:
+        Optional headline stating the chart's single takeaway.
+    color:
+        Optional fill/line color. Defaults to the theme's first categorical
+        color.
+    gradient:
+        If ``True`` (default), fill with a vertical depth gradient; if
+        ``False``, use a flat ~12%-opacity wash.
+
+    Returns
+    -------
+    matplotlib.axes.Axes
+        The Axes containing the plot.
+    """
+    ax = ax if ax is not None else _new_axes()
+    if len(df) == 0:
+        return _render_empty(ax)
+    _require_columns(df, [x, y])
+
+    tokens = theme_tokens()
+    fill_color = color or tokens["series"][0]
+
+    # A crisp 2px top edge defines the value; the fill below carries the depth.
+    ax.plot(df[x], df[y], color=fill_color, zorder=3)
+    if gradient:
+        _gradient_fill(ax, _x_to_numbers(df[x]), np.asarray(df[y], dtype=float),
+                       fill_color)
+    else:
+        ax.fill_between(df[x], df[y], color=fill_color, alpha=0.12, zorder=1)
+
+    ax.set_xlabel(x)
+    ax.set_ylabel(y)
+    ax.margins(x=0)  # let the fill meet the left/right edges, like the reference
     return _finish(ax, title)
 
 
