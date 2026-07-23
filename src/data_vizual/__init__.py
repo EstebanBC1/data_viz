@@ -22,6 +22,7 @@ from .core import (
     histogram,
     line_plot,
     load_csv,
+    lollipop_plot,
     missing_value_counts,
     scatter_plot,
     set_theme,
@@ -29,7 +30,7 @@ from .core import (
     theme_tokens,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 # The names that make up the public API (what `from data_vizual import *` gets,
 # and a clear inventory for readers).
@@ -48,6 +49,7 @@ __all__ = [
     "line_plot",
     "area_plot",
     "bar_plot",
+    "lollipop_plot",
     "histogram",
     "scatter_plot",
     "direct_label",

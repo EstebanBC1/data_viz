@@ -101,6 +101,12 @@ Run `python examples/color_system.py` to render all of these in both themes.
 accent color under the line eases to a light tint at the baseline. Pass
 `gradient=False` for a flat wash.
 
+**Type & shape.** The library bundles **Nunito** (a friendly, rounded sans,
+SIL OFL) and registers it automatically, so the approachable-but-professional
+look renders anywhere without a system font install. Bars get a soft **rounded
+data-end** (square on the baseline) by default — pass `rounded=False` for
+crisp corners. `lollipop_plot` offers a lighter alternative to a wall of bars.
+
 **What the defaults do**
 
 - Left-aligned title as the single takeaway (`title=` on any plot).
@@ -137,9 +143,10 @@ own figures (e.g. small multiples, like the gallery).
 | `column_types(df)` | Dtype of each column. |
 | `missing_value_counts(df)` | Missing values per column, sorted descending. |
 | `summary_statistics(df)` | Descriptive stats for numeric columns. |
-| `line_plot(df, x, y, ax=None)` | Line chart of `y` over `x`. |
+| `line_plot(df, x, y, ...)` | Line chart of `y` over `x` (`marker`, `linestyle`, `alpha` for multi-series). |
 | `area_plot(df, x, y, gradient=True)` | Filled area with a subtle depth gradient (`gradient=False` for a flat wash). |
-| `bar_plot(df, x, y, ax=None)` | Bar chart of `y` per category `x`. |
+| `lollipop_plot(df, x, y, highlight=None)` | A lighter, friendlier take on the bar chart (stem + dot). |
+| `bar_plot(df, x, y, ...)` | Bar chart with rounded tops; `by_sign` (green/red), `highlight`, `rounded=False`. |
 | `histogram(df, column, bins=10, ax=None)` | Distribution of one numeric column. |
 | `scatter_plot(df, x, y, ax=None)` | Relationship between two numeric columns. |
 

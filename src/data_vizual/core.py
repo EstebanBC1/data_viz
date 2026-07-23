@@ -36,7 +36,28 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from cycler import cycler
+from matplotlib import font_manager as _font_manager
+from matplotlib.patches import PathPatch
+from matplotlib.path import Path as _MplPath
 from matplotlib.ticker import FuncFormatter
+
+
+# Register the bundled Nunito font (SIL OFL) so the friendly, rounded look
+# renders everywhere — no system install required. Falls back gracefully if the
+# files are missing.
+def _register_bundled_fonts() -> None:
+    font_dir = Path(__file__).parent / "fonts"
+    if not font_dir.is_dir():
+        return
+    for ttf in font_dir.glob("*.ttf"):
+        try:
+            _font_manager.fontManager.addfont(str(ttf))
+        except Exception:
+            # A missing/corrupt font must never stop the library importing.
+            pass
+
+
+_register_bundled_fonts()
 
 # ---------------------------------------------------------------------------
 # 0. Design tokens & theme
@@ -50,12 +71,15 @@ from matplotlib.ticker import FuncFormatter
 # sequence, so the first N colors of any chart stay distinguishable. Assign in
 # order; never shuffle or cycle beyond the list.
 
-# Font stack: a clean system sans everywhere. DejaVu Sans is matplotlib's
-# always-available fallback, so text renders even where system fonts are absent.
+# Font stack: a friendly, rounded sans. Nunito (bundled, SIL OFL) leads for a
+# professional-but-approachable feel; rounded system fallbacks follow, ending in
+# matplotlib's always-available DejaVu Sans so text renders anywhere.
 _FONT_STACK = [
+    "Nunito",           # bundled — the intended look
+    "Varela Round",
+    "Quicksand",
+    "SF Pro Rounded",
     "system-ui",
-    "-apple-system",
-    "Segoe UI",
     "Helvetica Neue",
     "Arial",
     "DejaVu Sans",
@@ -714,6 +738,65 @@ def area_plot(
     return _finish(ax, title)
 
 
+def _rounded_top_path(x0: float, y0: float, width: float, height: float,
+                      rx: float, ry: float) -> _MplPath:
+    """Build a bar path with a rounded data-end and a square baseline.
+
+    Only the tip (the end away from the baseline) is rounded, so bars still sit
+    flat on the axis — friendly, not floating. ``rx``/``ry`` are the corner radii
+    in x/y data units (kept separate so the corner looks round despite the axis
+    aspect). Works for negative bars too (the tip is at the bottom).
+    """
+    rx = min(rx, width / 2.0)
+    ry = min(ry, abs(height)) if height != 0 else 0.0
+    sign = 1.0 if height >= 0 else -1.0
+    tip = y0 + height
+    verts = [
+        (x0, y0),                     # bottom-left, on the baseline
+        (x0, tip - sign * ry),        # up the left side to the corner
+        (x0, tip),                    # control point (left corner)
+        (x0 + rx, tip),               # end of left corner
+        (x0 + width - rx, tip),       # across the rounded end
+        (x0 + width, tip),            # control point (right corner)
+        (x0 + width, tip - sign * ry),  # end of right corner
+        (x0 + width, y0),             # down the right side to the baseline
+        (x0, y0),                     # close
+    ]
+    codes = [
+        _MplPath.MOVETO, _MplPath.LINETO,
+        _MplPath.CURVE3, _MplPath.CURVE3,
+        _MplPath.LINETO,
+        _MplPath.CURVE3, _MplPath.CURVE3,
+        _MplPath.LINETO, _MplPath.CLOSEPOLY,
+    ]
+    return _MplPath(verts, codes)
+
+
+def _round_bar_tops(ax: plt.Axes, bars, radius_px: float = 6.0) -> None:
+    """Replace each rectangular bar with a rounded-top version.
+
+    The radius is specified in pixels and converted to data units per axis, so
+    the rounding looks consistent regardless of the value scale.
+    """
+    # Pixels per data unit, from the current data transform.
+    origin = ax.transData.transform((0, 0))
+    x_ppu = abs(ax.transData.transform((1, 0))[0] - origin[0]) or 1.0
+    y_ppu = abs(ax.transData.transform((0, 1))[1] - origin[1]) or 1.0
+    rx, ry = radius_px / x_ppu, radius_px / y_ppu
+
+    for patch in list(bars):
+        x0, y0 = patch.get_x(), patch.get_y()
+        w, h = patch.get_width(), patch.get_height()
+        face, edge = patch.get_facecolor(), patch.get_edgecolor()
+        lw = patch.get_linewidth()
+        patch.remove()
+        ax.add_patch(PathPatch(
+            _rounded_top_path(x0, y0, w, h, rx, ry),
+            facecolor=face, edgecolor=edge, linewidth=lw,
+            joinstyle="round", zorder=2,
+        ))
+
+
 def bar_plot(
     df: pd.DataFrame,
     x: str,
@@ -723,6 +806,7 @@ def bar_plot(
     color: str | None = None,
     by_sign: bool = False,
     highlight: object | None = None,
+    rounded: bool = True,
 ) -> plt.Axes:
     """Draw a bar chart of ``y`` for each category in ``x``.
 
@@ -781,17 +865,89 @@ def bar_plot(
 
     # A 2px surface-colored edge reads as a clean gap between neighbors rather
     # than a heavy stroke; bars capped in width so the slot keeps some air.
-    ax.bar(
+    bars = ax.bar(
         df[x], df[y],
         color=colors,
         edgecolor=tokens["surface"],
         linewidth=1.0,
         width=0.7,
     )
+    if rounded:
+        # A soft, friendly data-end — professional but not stiff.
+        _round_bar_tops(ax, bars)
     if by_sign:
         # A quiet zero reference so positive/negative read against a baseline.
         ax.axhline(0, color=tokens["reference"], linewidth=1.0, zorder=1)
 
+    ax.set_xlabel(x)
+    ax.set_ylabel(y)
+    return _finish(ax, title)
+
+
+def lollipop_plot(
+    df: pd.DataFrame,
+    x: str,
+    y: str,
+    ax: plt.Axes | None = None,
+    title: str | None = None,
+    color: str | None = None,
+    highlight: object | None = None,
+) -> plt.Axes:
+    """Draw a lollipop chart: a thin stem topped with a dot, per category.
+
+    A lighter, friendlier take on the bar chart — it carries the same
+    comparison but with far less ink, so it feels airy rather than blocky. Best
+    when you have a handful of categories and want the values to pop without a
+    wall of bars.
+
+    Parameters
+    ----------
+    df:
+        The data to plot.
+    x:
+        Column name for the categories.
+    y:
+        Column name for the values.
+    ax:
+        Optional existing Axes to draw on. If omitted, a new themed figure is
+        created.
+    title:
+        Optional headline stating the chart's single takeaway.
+    color:
+        Optional dot/stem color. Defaults to the accent color.
+    highlight:
+        A value in ``x`` to accent while the rest go neutral gray.
+
+    Returns
+    -------
+    matplotlib.axes.Axes
+        The Axes containing the plot.
+    """
+    ax = ax if ax is not None else _new_axes()
+    if len(df) == 0:
+        return _render_empty(ax)
+    _require_columns(df, [x, y])
+
+    tokens = theme_tokens()
+    positions = range(len(df))
+    values = list(df[y])
+    if highlight is not None:
+        colors = [tokens["accent"] if cat == highlight else tokens["neutral"]
+                  for cat in df[x]]
+    else:
+        colors = [color or tokens["accent"]] * len(df)
+
+    for pos, value, col in zip(positions, values, colors):
+        # Thin stem from the baseline, capped with a generous round dot.
+        ax.plot([pos, pos], [0, value], color=col, linewidth=2.0,
+                solid_capstyle="round", zorder=2)
+        ax.plot(pos, value, marker="o", markersize=11, color=col,
+                markeredgecolor=tokens["surface"], markeredgewidth=1.5,
+                zorder=3)
+
+    ax.set_xticks(list(positions))
+    ax.set_xticklabels(list(df[x]))
+    ax.margins(x=0.08)
     ax.set_xlabel(x)
     ax.set_ylabel(y)
     return _finish(ax, title)

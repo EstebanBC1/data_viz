@@ -56,36 +56,45 @@ def build_gallery(mode: str, data: dict[str, pd.DataFrame]) -> plt.Figure:
     tokens = dv.theme_tokens(mode)
 
     # A 2x2 layout of small multiples; generous spacing lets each breathe.
-    fig, axes = plt.subplots(2, 2, figsize=(11, 8))
+    fig, axes = plt.subplots(3, 2, figsize=(11, 12))
     fig.set_facecolor(tokens["page"])
     fig.suptitle(
-        f"data_vizual default charts — {mode} theme",
-        x=0.06, ha="left", fontsize=17, fontweight="semibold",
+        f"data_vizual chart styles — {mode} theme",
+        x=0.06, ha="left", fontsize=18, fontweight="semibold",
         color=tokens["primary"],
     )
 
     area_ax = dv.area_plot(
         data["trend"], x="month", y="revenue", ax=axes[0, 0],
-        title="Revenue grew steadily through 2026",
+        title="Area — revenue grew all year",
     )
     # Thin the monthly date ticks so labels don't collide in a narrow panel
     # (tick density depends on panel width, so it's set here, not in the library).
     area_ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
     area_ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+
     dv.bar_plot(
         data["regions"], x="region", y="sales", ax=axes[0, 1],
-        title="East leads regional sales",
+        title="Bar — rounded, friendly tops",
+    )
+    dv.lollipop_plot(
+        data["regions"], x="region", y="sales", ax=axes[1, 0],
+        title="Lollipop — a lighter take on bars",
+    )
+    dv.bar_plot(
+        data["regions"], x="region", y="sales", ax=axes[1, 1],
+        highlight="East", title="Highlight — one bar in focus",
     )
     dv.histogram(
-        data["distribution"], column="order_value", bins=24, ax=axes[1, 0],
-        title="Order values are right-skewed",
+        data["distribution"], column="order_value", bins=24, ax=axes[2, 0],
+        title="Histogram — order values are skewed",
     )
     dv.scatter_plot(
-        data["relationship"], x="ad_spend", y="revenue", ax=axes[1, 1],
-        title="Ad spend tracks revenue",
+        data["relationship"], x="ad_spend", y="revenue", ax=axes[2, 1],
+        title="Scatter — ad spend tracks revenue",
     )
 
-    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
     return fig
 
 

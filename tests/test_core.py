@@ -168,6 +168,31 @@ def test_area_plot_flat_fill(df):
     assert len(ax.collections) >= 1
 
 
+def test_bundled_nunito_font_registered():
+    import matplotlib.font_manager as fm
+    names = {f.name for f in fm.fontManager.ttflist}
+    assert "Nunito" in names
+
+
+def test_rounded_bars_are_path_patches(df):
+    ax = dv.bar_plot(df, x="region", y="day")  # rounded=True by default
+    from matplotlib.patches import PathPatch
+    assert len(ax.patches) == 4
+    assert all(isinstance(p, PathPatch) for p in ax.patches)
+
+
+def test_rounded_can_be_disabled(df):
+    ax = dv.bar_plot(df, x="region", y="day", rounded=False)
+    from matplotlib.patches import Rectangle
+    assert all(isinstance(p, Rectangle) for p in ax.patches)
+
+
+def test_lollipop_plot_returns_axes(df):
+    ax = dv.lollipop_plot(df, x="region", y="day")
+    # A stem + a dot per row => at least 2 line artists per category.
+    assert len(ax.lines) >= len(df)
+
+
 def test_bar_plot_returns_axes(df):
     ax = dv.bar_plot(df, x="region", y="day")
     assert len(ax.patches) == 4  # one bar per row
