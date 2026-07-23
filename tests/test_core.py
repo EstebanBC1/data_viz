@@ -1,18 +1,26 @@
 """Tests for data_vizual.core.
 
-These cover the happy path for each public function plus the one error case we
-raise ourselves. Plotting tests use matplotlib's non-interactive "Agg" backend
-so they run headless (no display needed) in CI.
+These cover the happy path for each public function, the theme/design-system
+behavior, and the error and empty states. Plotting tests use matplotlib's
+non-interactive "Agg" backend so they run headless (no display needed) in CI.
 """
 
 import matplotlib
 
 matplotlib.use("Agg")  # must be set before pyplot is imported anywhere
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
 import data_vizual as dv
+
+
+@pytest.fixture(autouse=True)
+def _reset_theme():
+    """Keep tests isolated: start each on the light theme."""
+    dv.set_theme("light")
+    yield
 
 
 @pytest.fixture
@@ -70,6 +78,36 @@ def test_summary_statistics(df):
     assert stats.loc["count", "revenue"] == 3
 
 
+# --- Theme / design system -------------------------------------------------
+
+
+def test_available_themes():
+    assert set(dv.available_themes()) == {"light", "dark"}
+
+
+def test_theme_tokens_are_copies():
+    # Mutating a returned token dict must not corrupt the shared palette.
+    tokens = dv.theme_tokens("light")
+    tokens["series"][0] = "#000000"
+    assert dv.theme_tokens("light")["series"][0] != "#000000"
+
+
+def test_theme_tokens_unknown_raises():
+    with pytest.raises(KeyError):
+        dv.theme_tokens("solarized")
+
+
+def test_set_theme_updates_color_cycle():
+    dv.set_theme("dark")
+    cycle_colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    assert cycle_colors[0] == dv.theme_tokens("dark")["series"][0]
+
+
+def test_set_theme_returns_tokens():
+    tokens = dv.set_theme("light")
+    assert tokens["surface"] == "#fcfcfb"
+
+
 # --- Plots -----------------------------------------------------------------
 # Each plot returns an Axes; we assert the return type and that data landed on
 # it, which is enough to catch wiring bugs without checking pixels.
@@ -96,3 +134,51 @@ def test_scatter_plot_returns_axes(df):
     ax = dv.scatter_plot(df, x="day", y="revenue")
     assert ax.get_xlabel() == "day"
     assert len(ax.collections) == 1
+
+
+def test_title_is_set_and_left_aligned(df):
+    ax = dv.line_plot(df, x="day", y="revenue", title="Revenue climbs")
+    assert ax.get_title(loc="left") == "Revenue climbs"
+
+
+# --- Consistent styling across chart types ---------------------------------
+
+
+@pytest.mark.parametrize(
+    "make_plot",
+    [
+        lambda d: dv.line_plot(d, x="day", y="revenue"),
+        lambda d: dv.bar_plot(d, x="region", y="day"),
+        lambda d: dv.histogram(d, column="day"),
+        lambda d: dv.scatter_plot(d, x="day", y="revenue"),
+    ],
+)
+def test_chrome_is_consistent(df, make_plot):
+    ax = make_plot(df)
+    # Top and right spines are always hidden so the data dominates.
+    assert not ax.spines["top"].get_visible()
+    assert not ax.spines["right"].get_visible()
+
+
+# --- Error and empty states ------------------------------------------------
+
+
+def test_missing_column_raises_clear_error(df):
+    with pytest.raises(KeyError, match="nope"):
+        dv.line_plot(df, x="day", y="nope")
+
+
+def test_empty_dataframe_renders_placeholder():
+    empty = pd.DataFrame({"day": [], "revenue": []})
+    ax = dv.line_plot(empty, x="day", y="revenue")
+    # No line drawn, and a single centered message is shown instead.
+    assert len(ax.lines) == 0
+    texts = [t.get_text() for t in ax.texts]
+    assert any("No data" in t for t in texts)
+
+
+def test_direct_label_adds_annotation(df):
+    ax = dv.line_plot(df, x="day", y="revenue")
+    before = len(ax.texts)
+    dv.direct_label(ax, 3, 30, "peak")
+    assert len(ax.texts) == before + 1

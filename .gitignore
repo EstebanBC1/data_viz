@@ -13,3 +13,6 @@ dist/
 # Virtual environments
 .venv/
 venv/
+
+# Generated example output
+gallery-*.png

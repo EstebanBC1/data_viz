@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "data_vizual"
-version = "0.1.0"
+version = "0.2.0"
 description = "Bare-bones pandas helpers and styled matplotlib plots for building a personal data-visualization aesthetic."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -24,7 +24,8 @@ dependencies = [
 
 [project.optional-dependencies]
 # Install with:  pip install "data_vizual[dev]"
-dev = ["pytest>=7.0"]
+# numpy is only needed to run the examples/ gallery, not the library itself.
+dev = ["pytest>=7.0", "numpy>=1.21"]
 
 [project.urls]
 Homepage = "https://github.com/EstebanBC1/data_viz"
