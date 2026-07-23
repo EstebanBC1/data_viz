@@ -85,64 +85,70 @@ _FONT_STACK = [
     "DejaVu Sans",
 ]
 
-# The design language is NEUTRAL-FIRST: ~80–90% of every chart is neutral
-# (surfaces, ink, gridlines, axes). Color is spent deliberately — on the
-# primary series, a highlighted item, a category, or a status — never as
-# decoration. Blue is the accent of emphasis, not a background or a default for
-# everything.
+# The look is HAND-DRAWN / EDITORIAL: a muted, earthy palette (no bright,
+# corporate primaries), bold near-black outlines around every mark, chunky
+# rounded shapes, and arrow-tipped axes instead of a grid. Playful and warm —
+# closer to a printed infographic than a dashboard.
 #
-# Series colors are STABLE across the library: series 1 is always blue, series 2
-# always orange, and so on, in both light and dark, so a color means the same
-# thing everywhere. Per the never-color-alone rule, series color is always
-# paired with a marker, line style, or direct label by the caller.
-_APPLE_PALETTE = [
-    "#007AFF",  # 1 blue   (also the accent / primary-emphasis color)
-    "#FF9500",  # 2 orange
-    "#34C759",  # 3 green
-    "#AF52DE",  # 4 purple
-    "#FF3B30",  # 5 red
-    "#5AC8FA",  # 6 teal
+# Series colors are STABLE across the library (series 1 is always the muted
+# blue, 2 mustard, …) and paired with markers / line styles / labels so nothing
+# relies on color alone.
+_EARTHY_PALETTE = [
+    "#5B7DA6",  # 1 muted steel blue
+    "#E0B03E",  # 2 mustard / goldenrod
+    "#6E9B57",  # 3 sage green
+    "#C6573A",  # 4 terracotta
+    "#8E8B84",  # 5 warm gray
+    "#7E5A8C",  # 6 muted plum
 ]
 
-# Semantic colors are reserved for meaning and never reused as "series 7".
+# Semantic colors, drawn from the same earthy family so status still fits the
+# palette. Reserved for meaning — never reused as "series 7".
 _SEMANTIC = {
-    "good": "#34C759",     # positive / success
-    "warning": "#FF9500",  # caution
-    "bad": "#FF3B30",      # negative / failure / destructive
-    "neutral": "#86868B",  # neutral / inactive
+    "good": "#6E9B57",     # positive / success — sage
+    "warning": "#E0B03E",  # caution — mustard
+    "bad": "#C6573A",      # negative / failure — terracotta
+    "neutral": "#B4B2A8",  # neutral / inactive — warm gray
 }
 
 _THEMES: dict[str, dict] = {
     "light": {
-        # Neutral surfaces and ink (Apple-like near-black on white).
-        "surface": "#ffffff",   # chart background — pure neutral
-        "page": "#f5f5f7",      # figure background — near-white
-        "primary": "#1d1d1f",   # titles / strongest text (near-black)
-        "secondary": "#6e6e73",  # axis labels / tick text (gray)
-        "muted": "#86868b",     # ticks / de-emphasized (gray)
-        "grid": "#e8e8ed",      # hairline gridlines (subtle gray)
-        "baseline": "#d2d2d7",  # axis spines (subtle gray)
-        # Deliberate color.
-        "accent": "#007AFF",    # the one point of emphasis (primary series)
-        "series": list(_APPLE_PALETTE),
-        # Comparison roles.
-        "context": "#86868B",   # de-emphasized "context" series (use with alpha)
-        "reference": "#d2d2d7",  # baselines / reference lines
+        # Warm off-white paper with near-black ink and outlines.
+        "surface": "#ffffff",   # chart background
+        "page": "#f4f1ea",      # figure background — warm paper
+        "primary": "#2a2a26",   # titles / strongest text (warm near-black)
+        "secondary": "#5c5a52",  # axis labels / tick text
+        "muted": "#8a897f",     # de-emphasized
+        "grid": "#e7e3d9",      # (grid is off by default; kept for callers)
+        "baseline": "#2a2a26",  # arrow axes ink
+        "outline": "#232320",   # bold mark outlines (near-black)
+        "accent": "#5B7DA6",    # default single-series color (muted blue)
+        "series": list(_EARTHY_PALETTE),
+        "context": "#B4B2A8",   # de-emphasized "context" series (use with alpha)
+        "reference": "#cfccc2",  # baselines / reference lines
         **_SEMANTIC,
     },
     "dark": {
-        # Neutral charcoal/black surfaces with light ink.
-        "surface": "#1c1c1e",   # chart background — charcoal
-        "page": "#000000",      # figure background — black
-        "primary": "#f5f5f7",   # titles / strongest text (near-white)
-        "secondary": "#aeaeb2",  # axis labels / tick text (gray)
-        "muted": "#8e8e93",     # ticks / de-emphasized (gray)
-        "grid": "#2c2c2e",      # hairline gridlines (subtle gray)
-        "baseline": "#3a3a3c",  # axis spines (subtle gray)
-        "accent": "#007AFF",    # same blue identity as light
-        "series": list(_APPLE_PALETTE),  # identical hues -> stable identity
-        "context": "#86868B",
-        "reference": "#48484a",  # darker reference gray for the dark surface
+        # Warm charcoal with off-white ink; palette lifted for the dark surface.
+        "surface": "#242320",
+        "page": "#161512",
+        "primary": "#f2f1ea",
+        "secondary": "#b8b6ab",
+        "muted": "#8f8d82",
+        "grid": "#33322d",
+        "baseline": "#ecebe3",   # arrow axes ink (light on dark)
+        "outline": "#ecebe3",    # bold mark outlines (off-white on dark)
+        "accent": "#7E9CC2",
+        "series": [
+            "#7E9CC2",  # muted blue (lifted)
+            "#EBC258",  # mustard
+            "#84B06A",  # sage
+            "#D66B4C",  # terracotta
+            "#A7A59B",  # warm gray
+            "#9A74A8",  # plum
+        ],
+        "context": "#8f8d82",
+        "reference": "#4a4842",
         **_SEMANTIC,
     },
 }
@@ -252,21 +258,22 @@ def set_theme(mode: str = "light") -> dict:
             "axes.edgecolor": tokens["baseline"],
             "grid.color": tokens["grid"],
             "axes.prop_cycle": cycler(color=tokens["series"]),
-            # Subtle chrome: hairlines everywhere, data drawn above the grid.
+            # Hand-drawn chrome: no gridlines, no tick marks — arrow axes carry
+            # the frame (added per-Axes in _style_axes). Spines hidden here.
             "axes.linewidth": 0.8,
             "axes.axisbelow": True,
+            "axes.grid": False,
             "axes.spines.top": False,
             "axes.spines.right": False,
-            "grid.linewidth": 0.8,
-            "xtick.major.width": 0.8,
-            "ytick.major.width": 0.8,
-            "xtick.major.size": 3,
-            "ytick.major.size": 3,
-            # Marks: 2px lines with round ends, comfortably sized markers.
-            "lines.linewidth": 2.0,
+            "axes.spines.left": False,
+            "axes.spines.bottom": False,
+            "xtick.major.size": 0,
+            "ytick.major.size": 0,
+            # Marks: bold, rounded lines with generous markers.
+            "lines.linewidth": 2.6,
             "lines.solid_capstyle": "round",
             "lines.solid_joinstyle": "round",
-            "lines.markersize": 6,
+            "lines.markersize": 7,
             # Frameless legends — the box is chart clutter; the swatch is enough.
             "legend.frameon": False,
             # A sensible, presentation-friendly default canvas.
@@ -456,27 +463,37 @@ def _style_axes(ax: plt.Axes) -> None:
     """
     tokens = theme_tokens()
 
-    # Let the data dominate: hide the top/right frame, keep the remaining
-    # spines as hairlines in the recessive baseline color.
-    for side in ("top", "right"):
-        ax.spines[side].set_visible(False)
-    for side in ("left", "bottom"):
-        ax.spines[side].set_visible(True)
-        ax.spines[side].set_color(tokens["baseline"])
-        ax.spines[side].set_linewidth(0.8)
-
-    # A single, horizontal hairline grid sitting *behind* the data. Consistent
-    # across chart types so the family reads as one system.
+    # Hand-drawn frame: hide all four spines and no grid — the two arrow axes
+    # (drawn below) are the whole frame, like a sketched chart.
+    for spine in ax.spines.values():
+        spine.set_visible(False)
     ax.set_axisbelow(True)
-    ax.grid(True, axis="y", color=tokens["grid"], linewidth=0.8)
-    ax.grid(False, axis="x")
+    ax.grid(False)
 
-    # Muted ticks, readable tick labels.
-    ax.tick_params(colors=tokens["muted"], length=3, width=0.8,
-                   labelcolor=tokens["secondary"])
+    # No tick marks; keep readable tick labels for the values.
+    ax.tick_params(length=0, labelcolor=tokens["secondary"], colors=tokens["muted"])
 
     # Consistent thousands grouping on the value axis.
     ax.yaxis.set_major_formatter(_comma_formatter())
+
+    _arrow_axes(ax, tokens)
+
+
+def _arrow_axes(ax: plt.Axes, tokens: dict) -> None:
+    """Draw the two axes as bold arrows along the left and bottom edges.
+
+    A playful, hand-drawn frame: an L of near-black arrows (pointing up and
+    right) replaces the usual box of spines. Drawn in axes-fraction coordinates
+    so it always hugs the panel edges regardless of the data range.
+    """
+    arrow = dict(arrowstyle="-|>", color=tokens["baseline"], linewidth=2.4,
+                 mutation_scale=18, joinstyle="round", capstyle="round")
+    # Bottom edge -> arrow to the right.
+    ax.annotate("", xy=(1.04, 0.0), xytext=(0.0, 0.0), xycoords="axes fraction",
+                arrowprops=arrow, annotation_clip=False, zorder=5)
+    # Left edge -> arrow up.
+    ax.annotate("", xy=(0.0, 1.04), xytext=(0.0, 0.0), xycoords="axes fraction",
+                arrowprops=arrow, annotation_clip=False, zorder=5)
 
 
 def _render_empty(ax: plt.Axes, message: str = "No data to display") -> plt.Axes:
@@ -681,17 +698,16 @@ def area_plot(
     ax: plt.Axes | None = None,
     title: str | None = None,
     color: str | None = None,
-    gradient: bool = True,
+    gradient: bool = False,
 ) -> plt.Axes:
-    """Draw a filled area chart of ``y`` against ``x``, with optional depth.
+    """Draw a filled area chart of ``y`` against ``x`` in the illustrative style.
 
-    Like :func:`line_plot`, but the region under the line is filled. By default
-    the fill uses a subtle vertical gradient (richer under the line, fading to
-    the baseline) that adds depth without shouting. Set ``gradient=False`` for a
-    flat, low-opacity wash instead.
+    Like :func:`line_plot`, but the region under the line is filled with a flat
+    muted color and topped with a bold near-black outline — the hand-drawn look.
+    Set ``gradient=True`` for a vertical depth gradient fill instead.
 
     Best for emphasizing magnitude over time — the area reads as "how much",
-    while the crisp top edge keeps the exact value legible.
+    while the bold top edge keeps the shape legible.
 
     Parameters
     ----------
@@ -705,11 +721,10 @@ def area_plot(
     title:
         Optional headline stating the chart's single takeaway.
     color:
-        Optional fill/line color. Defaults to the theme's first categorical
-        color.
+        Optional fill color. Defaults to the theme's first categorical color.
     gradient:
-        If ``True`` (default), fill with a vertical depth gradient; if
-        ``False``, use a flat ~12%-opacity wash.
+        If ``True``, fill with a vertical depth gradient; if ``False`` (default),
+        a flat fill with a bold outline.
 
     Returns
     -------
@@ -724,13 +739,15 @@ def area_plot(
     tokens = theme_tokens()
     fill_color = color or tokens["accent"]
 
-    # A crisp 2px top edge defines the value; the fill below carries the depth.
-    ax.plot(df[x], df[y], color=fill_color, zorder=3)
     if gradient:
+        # Optional depth gradient; keep a colored top edge to match.
+        ax.plot(df[x], df[y], color=fill_color, zorder=3)
         _gradient_fill(ax, _x_to_numbers(df[x]), np.asarray(df[y], dtype=float),
                        fill_color)
     else:
-        ax.fill_between(df[x], df[y], color=fill_color, alpha=0.12, zorder=1)
+        # Illustrative default: flat muted fill under a bold near-black outline.
+        ax.fill_between(df[x], df[y], color=fill_color, alpha=0.85, zorder=1)
+        ax.plot(df[x], df[y], color=tokens["outline"], linewidth=2.6, zorder=3)
 
     ax.set_xlabel(x)
     ax.set_ylabel(y)
@@ -868,13 +885,13 @@ def bar_plot(
     bars = ax.bar(
         df[x], df[y],
         color=colors,
-        edgecolor=tokens["surface"],
-        linewidth=1.0,
-        width=0.7,
+        edgecolor=tokens["outline"],
+        linewidth=2.4,
+        width=0.72,
     )
     if rounded:
         # A soft, friendly data-end — professional but not stiff.
-        _round_bar_tops(ax, bars)
+        _round_bar_tops(ax, bars, radius_px=9.0)
     if by_sign:
         # A quiet zero reference so positive/negative read against a baseline.
         ax.axhline(0, color=tokens["reference"], linewidth=1.0, zorder=1)
@@ -938,11 +955,11 @@ def lollipop_plot(
         colors = [color or tokens["accent"]] * len(df)
 
     for pos, value, col in zip(positions, values, colors):
-        # Thin stem from the baseline, capped with a generous round dot.
-        ax.plot([pos, pos], [0, value], color=col, linewidth=2.0,
+        # Bold stem from the baseline, capped with a big outlined dot.
+        ax.plot([pos, pos], [0, value], color=tokens["outline"], linewidth=2.4,
                 solid_capstyle="round", zorder=2)
-        ax.plot(pos, value, marker="o", markersize=11, color=col,
-                markeredgecolor=tokens["surface"], markeredgewidth=1.5,
+        ax.plot(pos, value, marker="o", markersize=13, color=col,
+                markeredgecolor=tokens["outline"], markeredgewidth=2.0,
                 zorder=3)
 
     ax.set_xticks(list(positions))
@@ -996,8 +1013,8 @@ def histogram(
     ax.hist(
         df[column], bins=bins,
         color=color or tokens["accent"],
-        edgecolor=tokens["surface"],
-        linewidth=1.0,
+        edgecolor=tokens["outline"],
+        linewidth=1.8,
     )
     ax.set_xlabel(column)
     ax.set_ylabel("Frequency")
@@ -1041,15 +1058,15 @@ def scatter_plot(
     _require_columns(df, [x, y])
 
     tokens = theme_tokens()
-    # A thin surface-colored ring keeps overlapping points legible without
-    # adding a heavy border.
+    # Bold near-black outline on each dot — the hand-drawn signature — which
+    # also keeps overlapping points legible.
     ax.scatter(
         df[x], df[y],
         color=color or tokens["accent"],
-        s=42,
-        edgecolors=tokens["surface"],
-        linewidths=0.8,
-        alpha=0.9,
+        s=70,
+        edgecolors=tokens["outline"],
+        linewidths=1.6,
+        alpha=0.95,
     )
     ax.set_xlabel(x)
     ax.set_ylabel(y)

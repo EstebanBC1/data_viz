@@ -85,10 +85,17 @@ def test_available_themes():
     assert set(dv.available_themes()) == {"light", "dark"}
 
 
-def test_series_palette_is_stable_across_themes():
-    # A series color means the same thing in light and dark (stable identity).
-    assert dv.theme_tokens("light")["series"] == dv.theme_tokens("dark")["series"]
-    assert dv.theme_tokens("light")["series"][0] == "#007AFF"
+def test_series_palette_leads_with_muted_blue():
+    # The earthy palette leads with a muted steel blue (not a bright primary),
+    # and both themes carry a full six-color set.
+    assert dv.theme_tokens("light")["series"][0] == "#5B7DA6"
+    assert len(dv.theme_tokens("light")["series"]) == 6
+    assert len(dv.theme_tokens("dark")["series"]) == 6
+
+
+def test_outline_token_present():
+    assert "outline" in dv.theme_tokens("light")
+    assert "outline" in dv.theme_tokens("dark")
 
 
 def test_semantic_tokens_present():
@@ -155,15 +162,15 @@ def test_line_plot_returns_axes(df):
 
 
 def test_area_plot_gradient_returns_axes(df):
-    ax = dv.area_plot(df, x="day", y="revenue")
-    # Crisp top edge is a line; the gradient fill is an image below it.
+    ax = dv.area_plot(df, x="day", y="revenue", gradient=True)
+    # Colored top edge is a line; the gradient fill is an image below it.
     assert len(ax.lines) == 1
     assert len(ax.images) == 1
 
 
-def test_area_plot_flat_fill(df):
-    ax = dv.area_plot(df, x="day", y="revenue", gradient=False)
-    # Flat wash uses fill_between (a PolyCollection), no gradient image.
+def test_area_plot_flat_fill_is_default(df):
+    ax = dv.area_plot(df, x="day", y="revenue")  # flat + outline by default
+    # Flat fill uses fill_between (a PolyCollection), no gradient image.
     assert len(ax.images) == 0
     assert len(ax.collections) >= 1
 

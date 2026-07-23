@@ -64,7 +64,7 @@ def build(mode: str) -> plt.Figure:
     fig, axes = plt.subplots(2, 2, figsize=(12, 8.5))
     fig.set_facecolor(t["page"])
     fig.suptitle(
-        f"Neutral-first color system — {mode} theme",
+        f"Color & style system — {mode} theme",
         x=0.06, ha="left", fontsize=17, fontweight="semibold", color=t["primary"],
     )
 

@@ -57,55 +57,53 @@ python examples/gallery.py --show   # or open interactive windows
 
 ## Design system
 
-The design language is **neutral-first**: roughly 80–90% of every chart is
-neutral (backgrounds, ink, gridlines, axes are white/near-white/charcoal and
-gray). **Color is spent deliberately** — on the primary series, a highlighted
-item, a category, or a status — never as decoration. Blue is the accent of
-emphasis, not a theme. Two themes ship: **`light`** and **`dark`**.
+The look is **hand-drawn / editorial**: a warm paper (or charcoal) surface, a
+**muted earthy palette**, **bold near-black outlines** on every mark, chunky
+rounded shapes, and **arrow-tipped axes** instead of a gridlines-and-box frame.
+Playful and warm — closer to a printed infographic than a dashboard. Two themes
+ship: **`light`** and **`dark`**.
 
 **Color tokens** (read any with `dv.theme_tokens()`):
 
 | Token | Role |
 | --- | --- |
-| `surface` / `page` | chart & figure backgrounds — neutral |
-| `primary` / `secondary` / `muted` | text ink — near-black/white and gray |
-| `grid` / `baseline` | hairline gridlines and axis spines — subtle gray |
-| `accent` | the one point of emphasis — **blue `#007AFF`** |
-| `series` | the 6-color categorical palette (stable identity) |
+| `surface` / `page` | chart & figure backgrounds (warm paper / charcoal) |
+| `primary` / `secondary` / `muted` | text ink |
+| `outline` | bold near-black (or off-white) mark outlines |
+| `baseline` | the arrow-axes ink |
+| `accent` | default single-series color — **muted blue `#5B7DA6`** |
+| `series` | the 6-color earthy palette |
 | `good` / `warning` / `bad` / `neutral` | reserved semantic colors |
 | `context` / `reference` | de-emphasized comparison series & baselines |
 
-**Series palette** — stable identity across the library (series 1 is always
-blue, 2 orange, …), identical in light and dark so a color means one thing:
+**Series palette** — a muted, earthy set (no bright corporate primaries):
 
-| 1 blue | 2 orange | 3 green | 4 purple | 5 red | 6 teal |
+| 1 steel blue | 2 mustard | 3 sage | 4 terracotta | 5 warm gray | 6 plum |
 | --- | --- | --- | --- | --- | --- |
-| `#007AFF` | `#FF9500` | `#34C759` | `#AF52DE` | `#FF3B30` | `#5AC8FA` |
+| `#5B7DA6` | `#E0B03E` | `#6E9B57` | `#C6573A` | `#8E8B84` | `#7E5A8C` |
 
-**Where color is (and isn't) used**
+Colors are still **spent deliberately**, always paired with a marker, line
+style, or direct label so nothing relies on color alone:
 
-- **Single series** → the accent blue (the subject is the emphasis).
-- **Multiple series** → the palette in order, always paired with a marker,
-  line style, or direct label (never color alone). `line_plot(..., marker="o",
-  linestyle="--")`.
+- **Single series** → the accent (the subject is the emphasis).
+- **Multiple series** → the palette in order + markers/line styles.
+  `line_plot(..., marker="o", linestyle="--")`.
 - **Highlight a comparison** → the focus series in `accent`, the rest in
   `context` gray at low `alpha`; or `bar_plot(..., highlight="East")`.
 - **Positive / negative** → `bar_plot(..., by_sign=True)` colors bars
-  green/red by sign and adds a zero reference line.
-- **Semantic** → `good`/`warning`/`bad`/`neutral` are reserved for meaning and
-  never reused as another series color.
+  sage/terracotta by sign and adds a zero reference line.
+- **Semantic** → `good`/`warning`/`bad`/`neutral` are reserved for meaning.
 
 Run `python examples/color_system.py` to render all of these in both themes.
 
-`area_plot` uses a theme-aware depth gradient by default (`gradient=True`): the
-accent color under the line eases to a light tint at the baseline. Pass
-`gradient=False` for a flat wash.
+`area_plot` fills flat under a bold outline by default; pass `gradient=True`
+for a theme-aware depth gradient instead.
 
 **Type & shape.** The library bundles **Nunito** (a friendly, rounded sans,
-SIL OFL) and registers it automatically, so the approachable-but-professional
-look renders anywhere without a system font install. Bars get a soft **rounded
-data-end** (square on the baseline) by default — pass `rounded=False` for
-crisp corners. `lollipop_plot` offers a lighter alternative to a wall of bars.
+SIL OFL) and registers it automatically, so the approachable look renders
+anywhere without a system font install. Bars get a soft **rounded data-end**
+(square on the baseline) by default — pass `rounded=False` for crisp corners.
+`lollipop_plot` offers a lighter alternative to a wall of bars.
 
 **What the defaults do**
 
