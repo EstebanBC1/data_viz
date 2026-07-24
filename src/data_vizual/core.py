@@ -84,15 +84,35 @@ def missing_value_counts(df: pd.DataFrame) -> pd.Series:
     """Missing values per column, highest first."""
     return df.isna().sum().sort_values(ascending=False)
 
+_MOTIFS = ("vertical", "waves", "dots", "grid", "scribble")
+
 def _shadow(scale: float = 1.0) -> list:
-    """Soft neomorphic extrude: a blurred dark bloom below + a light lift above,
-    faked by stacking offset shadow copies with decaying alpha."""
-    t, sp = theme_tokens(), pe.SimplePatchShadow
-    fx = [sp(offset=(0, -o * scale), shadow_rgbFace=t["sd"], alpha=t["sd_a"] * a)
-          for o, a in ((1, 1), (2.6, .7), (4.4, .45), (6.5, .25))]
-    fx += [sp(offset=(0, o * scale), shadow_rgbFace=t["sl"], alpha=t["sl_a"] * a)
-           for o, a in ((.8, 1), (2, .5))]
-    return fx + [pe.Normal()]
+    """A soft raised drop-shadow (down-right) giving each mark tactile depth."""
+    t = theme_tokens()
+    return [pe.SimplePatchShadow(offset=(3.5 * scale, -3.5 * scale),
+                                 shadow_rgbFace=t["sd"], alpha=t["sd_a"] * 1.3),
+            pe.Normal()]
+
+def _pattern(ax, patch, kind, color, x0, x1, top, a=0.7):
+    """Texture a bar by clipping an editorial motif inside it: parallel lines,
+    hand-drawn waves/scribble, a dot field, or a grid — all pure matplotlib."""
+    xs = np.linspace(x0, x1, 120)
+    row = max(abs(top), 1) / 22
+    clip = lambda art: art.set_clip_path(patch)
+    if kind in ("vertical", "grid"):
+        for gx in np.arange(x0, x1, (x1 - x0) / 7):
+            clip(ax.plot([gx, gx], [0, top], color=color, lw=1, alpha=a, zorder=7)[0])
+    if kind in ("horizontal", "grid"):
+        for gy in np.arange(0, top, row):
+            clip(ax.plot([x0, x1], [gy, gy], color=color, lw=1, alpha=a, zorder=7)[0])
+    if kind in ("waves", "scribble"):
+        f, amp = (18, .30) if kind == "waves" else (55, .12)
+        for gy in np.arange(0, top, row):
+            clip(ax.plot(xs, gy + row * amp * np.sin(xs * f),
+                         color=color, lw=1, alpha=a, zorder=7)[0])
+    if kind == "dots":
+        gx, gy = np.meshgrid(np.arange(x0, x1, (x1 - x0) / 7), np.arange(row, top, row))
+        clip(ax.scatter(gx.ravel(), gy.ravel(), s=6, color=color, alpha=a, zorder=7))
 
 def _axes(ax):
     """Return a themed Axes, creating a transparent-backed one if needed."""
@@ -121,11 +141,15 @@ def _style(ax, title, x=None, y=None):
         ax.set_title(title, loc="left")
     return ax
 
-def line_plot(df, x, y, ax=None, title=None, color=None, label=None, marker="o"):
-    """Line chart: a solid rounded line with a soft shadow and open markers."""
+def line_plot(df, x, y, ax=None, title=None, color=None, label=None, marker="o",
+              fill=False):
+    """Line chart: a solid rounded line with a soft shadow and open markers;
+    fill=True adds a soft editorial area tint beneath it."""
     ax = _axes(ax)
     t = theme_tokens()
     c = color or t["accent"]
+    if fill:
+        ax.fill_between(df[x], df[y], df[y].min(), color=c, alpha=0.15, zorder=2)
     (ln,) = ax.plot(df[x], df[y], color=c, label=label, linewidth=3.4,
                     solid_capstyle="round", solid_joinstyle="round", zorder=3)
     ln.set_path_effects([pe.SimpleLineShadow(offset=(0, -2.2), shadow_color=t["sd"],
@@ -137,21 +161,28 @@ def line_plot(df, x, y, ax=None, title=None, color=None, label=None, marker="o")
     return _style(ax, title, x, y)
 
 def bar_plot(df, x, y, ax=None, title=None, color=None, by_sign=False,
-             highlight=None, show_values=True):
-    """Bars: blue (or blue/negative by sign, or one highlighted), softly raised
-    with a shadow and direct value labels; no gradients."""
+             highlight=None, show_values=True, pattern=None):
+    """Bars: softly raised with a shadow and direct value labels. Color by sign,
+    highlight one, or (pattern=True) give each bar an editorial series color and
+    a clipped motif; pattern="waves" applies one motif to every bar."""
     ax = _axes(ax)
     t = theme_tokens()
     if by_sign:
         colors = [t["accent"] if v >= 0 else t["negative"] for v in df[y]]
     elif highlight is not None:
         colors = [t["accent"] if c == highlight else t["muted"] for c in df[x]]
+    elif pattern is True:
+        colors = [t["series"][i % len(t["series"])] for i in range(len(df))]
     else:
         colors = color or t["accent"]
     bars = ax.bar(df[x], df[y], color=colors, edgecolor=t["outline"],
                   linewidth=1.5, width=0.72)
-    for b in bars:
+    for i, b in enumerate(bars):
         b.set_path_effects(_shadow())
+        if pattern:
+            kind = _MOTIFS[i % len(_MOTIFS)] if pattern is True else pattern
+            _pattern(ax, b, kind, t["outline"], b.get_x(),
+                     b.get_x() + b.get_width(), b.get_height())
     if by_sign:
         ax.axhline(0, color=t["baseline"], linewidth=1, zorder=1)
     if show_values:
@@ -179,16 +210,20 @@ def scatter_plot(df, x, y, ax=None, title=None, color=None, trendline=False):
                 solid_capstyle="round", zorder=4)
     return _style(ax, title, x, y)
 
-def hist_plot(df, column, bins=20, ax=None, title=None, color=None):
-    """Histogram with a smooth density curve (the distribution line) overlaid."""
+def hist_plot(df, column, bins=20, ax=None, title=None, color=None,
+              pattern="vertical"):
+    """Histogram with a smooth density curve (the distribution line) overlaid;
+    bars carry the same editorial motif fill as bar_plot (pattern=None for solid)."""
     ax = _axes(ax)
     t = theme_tokens()
     v = np.asarray(df[column], float)
     v = v[~np.isnan(v)]
-    counts, _, patches = ax.hist(v, bins=bins, color=color or t["accent"],
-                                 edgecolor=t["outline"], linewidth=1)
-    for p in patches:
-        p.set_path_effects(_shadow())
+    counts, edges, patches = ax.hist(v, bins=bins, color=color or t["accent"],
+                                     edgecolor=t["outline"], linewidth=1)
+    for p, lo, hi in zip(patches, edges[:-1], edges[1:]):
+        p.set_path_effects(_shadow(0.6))
+        if pattern:
+            _pattern(ax, p, pattern, t["outline"], lo, hi, p.get_height(), a=0.5)
     g = np.linspace(v.min(), v.max(), 200)
     h = 1.06 * v.std() * len(v) ** -0.2 or 1.0           # Silverman bandwidth
     d = np.exp(-((g[:, None] - v) / h) ** 2 / 2).sum(1) / (len(v) * h * 2.5066)

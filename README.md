@@ -11,10 +11,19 @@ object, so the library stays easy to read, test, and debug.
 
 ## Gallery
 
-A playful, softly dimensional look — a blue-led palette (burnt orange for
-emphasis), soft mark shadows, quiet unframed axes, and faint gridlines — in both
-light and dark themes. Below: a small dashboard for a fictional coffee company
-(`python examples/gallery.py`).
+A playful, editorial, softly dimensional look — a blue-led palette (burnt
+orange for emphasis), soft raised mark shadows, quiet unframed axes, faint
+gridlines, and **hand-drawn patterned bar fills** (waves, lines, dots, grid,
+scribble) — in both light and dark themes. Run `python examples/gallery.py`.
+
+**Patterned bars** (`bar_plot(..., pattern=True)`) — each bar gets a series
+color and a clipped editorial motif, on a soft organic ribbon backdrop:
+
+| Light | Dark |
+| --- | --- |
+| ![Patterned bars, light theme](docs/images/gallery-hero-light.png) | ![Patterned bars, dark theme](docs/images/gallery-hero-dark.png) |
+
+**The full dashboard** for a fictional coffee company:
 
 | Light | Dark |
 | --- | --- |
@@ -46,8 +55,9 @@ dv.summary_statistics(df)    # count / mean / std / min / quartiles / max
 dv.missing_value_counts(df)  # missing values per column (highest first)
 
 # Each plot returns a matplotlib Axes you can keep customizing.
-dv.line_plot(df, x="month", y="revenue", title="Revenue nearly doubled")
-dv.hist_plot(df, column="order_value")                      # bars + density line
+dv.line_plot(df, x="month", y="revenue", fill=True, title="Revenue doubled")
+dv.hist_plot(df, column="order_value")                      # textured bars + density line
+dv.bar_plot(df, x="product", y="revenue", pattern=True)     # editorial patterned bars
 dv.bar_plot(df, x="quarter", y="growth", by_sign=True)      # blue / negative
 dv.bar_plot(df, x="region", y="sales", highlight="West")    # one bar in focus
 dv.scatter_plot(df, x="ad_spend", y="signups", trendline=True)
@@ -87,8 +97,8 @@ accents one bar and mutes the rest; `scatter_plot(..., trendline=True)` adds a
 burnt-orange regression line. Insight-led titles (`title=`) act as direct
 labels.
 
-> Scope: this is an MVP (core module under 200 lines) — three chart types on a
-> shared theme. Static matplotlib output, so web concepts like
+> Scope: this is a compact MVP — four chart types on a shared, patterned
+> editorial theme. Static matplotlib output, so web concepts like
 > `prefers-reduced-motion`, DOM tooltips, and keyboard focus don't apply.
 
 ## API
@@ -99,9 +109,9 @@ labels.
 | `load_csv(path, **kwargs)` | Read a CSV into a DataFrame (clear error if missing). |
 | `summary_statistics(df)` | Descriptive stats for numeric columns. |
 | `missing_value_counts(df)` | Missing values per column, sorted descending. |
-| `line_plot(df, x, y, ...)` | Line + open markers with a soft shadow. |
-| `hist_plot(df, column, bins=20)` | Histogram with a smooth density (distribution) line overlaid. |
-| `bar_plot(df, x, y, ...)` | Bars with soft depth + value labels; `by_sign`, `highlight`. |
+| `line_plot(df, x, y, fill=False, ...)` | Rounded line + open markers with a soft shadow; `fill` adds an area tint. |
+| `hist_plot(df, column, bins=20, pattern="vertical")` | Histogram (textured bars) with a smooth density (distribution) line overlaid. |
+| `bar_plot(df, x, y, ...)` | Bars with soft depth + value labels; `by_sign`, `highlight`, `pattern` (editorial motif fills). |
 | `scatter_plot(df, x, y, trendline=False)` | Translucent points; optional burnt-orange trend line. |
 
 Every plot accepts an optional `ax=` and returns the `Axes`, so you can compose
