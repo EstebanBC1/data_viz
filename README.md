@@ -42,11 +42,10 @@ import data_vizual as dv
 dv.set_theme("light")        # pick the theme once ("light" or "dark")
 
 df = dv.load_csv("data/sales.csv")
-dv.summary_statistics(df)    # count / mean / std / min / quartiles / max
-dv.missing_value_counts(df)  # missing values per column (highest first)
 
 # Each plot returns a matplotlib Axes you can keep customizing.
 dv.line_plot(df, x="month", y="revenue", title="Revenue nearly doubled")
+dv.hist_plot(df, column="order_value")                      # bars + density line
 dv.bar_plot(df, x="quarter", y="growth", by_sign=True)      # blue / negative
 dv.bar_plot(df, x="region", y="sales", highlight="West")    # one bar in focus
 dv.scatter_plot(df, x="ad_spend", y="signups", trendline=True)
@@ -58,7 +57,9 @@ The look is **playful, editorial, and softly dimensional**: blue carries most
 of the visual weight, **burnt orange is reserved for emphasis**, marks have a
 soft theme-aware drop-shadow (depth on the data, not cards around it), chart
 backgrounds are transparent and unframed, gridlines are thin and low-opacity,
-and axes stay quiet. Two themes ship: **`light`** and **`dark`**.
+and axes stay quiet. Two themes ship: **`light`** (blue-led) and **`dark`**
+(the [Rosé Pine Moon](https://rosepinetheme.com) palette — pine, gold, love,
+foam, iris on a navy base).
 
 **Color tokens** (read any with `dv.theme_tokens()`):
 
@@ -94,9 +95,8 @@ labels.
 | --- | --- |
 | `set_theme(mode)` / `theme_tokens()` / `available_themes()` | Apply and read the theme tokens. |
 | `load_csv(path, **kwargs)` | Read a CSV into a DataFrame (clear error if missing). |
-| `summary_statistics(df)` | Descriptive stats for numeric columns. |
-| `missing_value_counts(df)` | Missing values per column, sorted descending. |
 | `line_plot(df, x, y, ...)` | Line + open markers with a soft shadow. |
+| `hist_plot(df, column, bins=20)` | Histogram with a smooth density (distribution) line overlaid. |
 | `bar_plot(df, x, y, ...)` | Bars with soft depth + value labels; `by_sign`, `highlight`. |
 | `scatter_plot(df, x, y, trendline=False)` | Translucent points; optional burnt-orange trend line. |
 

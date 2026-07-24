@@ -47,16 +47,6 @@ def test_load_csv_missing_file_raises():
         dv.load_csv("does/not/exist.csv")
 
 
-def test_summary_statistics(df):
-    assert dv.summary_statistics(df).loc["count", "revenue"] == 3
-
-
-def test_missing_value_counts(df):
-    missing = dv.missing_value_counts(df)
-    assert missing.iloc[0] == 1
-    assert missing["revenue"] == 1
-
-
 # --- theme -----------------------------------------------------------------
 
 
@@ -130,6 +120,14 @@ def test_scatter_plot_returns_axes(df):
 def test_scatter_trendline_adds_line(df):
     ax = dv.scatter_plot(df, x="month", y="revenue", trendline=True)
     assert len(ax.lines) == 1
+
+
+def test_hist_plot_has_bars_and_density_line():
+    import numpy as np
+    d = pd.DataFrame({"v": np.random.default_rng(0).normal(0, 1, 500)})
+    ax = dv.hist_plot(d, column="v", bins=20)
+    assert len(ax.patches) == 20        # histogram bars
+    assert len(ax.lines) == 1           # overlaid density curve
 
 
 def test_title_is_left_aligned(df):

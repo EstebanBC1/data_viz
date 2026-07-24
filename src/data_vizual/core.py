@@ -76,24 +76,14 @@ def load_csv(path, **read_csv_kwargs) -> pd.DataFrame:
         raise FileNotFoundError(f"No CSV file found at: {p}")
     return pd.read_csv(p, **read_csv_kwargs)
 
-def summary_statistics(df: pd.DataFrame) -> pd.DataFrame:
-    """describe() for the numeric columns."""
-    return df.describe()
-
-def missing_value_counts(df: pd.DataFrame) -> pd.Series:
-    """Missing values per column, highest first."""
-    return df.isna().sum().sort_values(ascending=False)
-
 def _shadow(scale: float = 1.0) -> list:
-    """Soft neomorphic extrude: a blurred dark bloom below and a light lift
-    above, faked by stacking offset shadow copies with decaying alpha."""
-    t = theme_tokens()
-    fx = [pe.SimplePatchShadow(offset=(0, -o * scale), shadow_rgbFace=t["sd"],
-                               alpha=t["sd_a"] * a)
-          for o, a in ((1.0, 1.0), (2.6, 0.7), (4.4, 0.45), (6.5, 0.25))]
-    fx += [pe.SimplePatchShadow(offset=(0, o * scale), shadow_rgbFace=t["sl"],
-                                alpha=t["sl_a"] * a)
-           for o, a in ((0.8, 1.0), (2.0, 0.5))]
+    """Soft neomorphic extrude: a blurred dark bloom below + a light lift above,
+    faked by stacking offset shadow copies with decaying alpha."""
+    t, sp = theme_tokens(), pe.SimplePatchShadow
+    fx = [sp(offset=(0, -o * scale), shadow_rgbFace=t["sd"], alpha=t["sd_a"] * a)
+          for o, a in ((1, 1), (2.6, .7), (4.4, .45), (6.5, .25))]
+    fx += [sp(offset=(0, o * scale), shadow_rgbFace=t["sl"], alpha=t["sl_a"] * a)
+           for o, a in ((.8, 1), (2, .5))]
     return fx + [pe.Normal()]
 
 def _axes(ax):
@@ -102,12 +92,6 @@ def _axes(ax):
         _, ax = plt.subplots()
         ax.set_prop_cycle(cycler(color=theme_tokens()["series"]))
     return ax
-
-def _require(df, cols):
-    """Raise a clear error naming any missing column."""
-    missing = [c for c in cols if c not in df.columns]
-    if missing:
-        raise KeyError(f"Column(s) {missing} not found. Have: {list(df.columns)}")
 
 def _style(ax, title, x=None, y=None):
     """Quiet chrome: transparent bg, one baseline, faint y-grid, direct title."""
@@ -132,7 +116,6 @@ def _style(ax, title, x=None, y=None):
 def line_plot(df, x, y, ax=None, title=None, color=None, label=None, marker="o"):
     """Line chart: a solid rounded line with a soft shadow and open markers."""
     ax = _axes(ax)
-    _require(df, [x, y])
     t = theme_tokens()
     c = color or t["accent"]
     (ln,) = ax.plot(df[x], df[y], color=c, label=label, linewidth=3.4,
@@ -150,7 +133,6 @@ def bar_plot(df, x, y, ax=None, title=None, color=None, by_sign=False,
     """Bars: blue (or blue/negative by sign, or one highlighted), softly raised
     with a shadow and direct value labels; no gradients."""
     ax = _axes(ax)
-    _require(df, [x, y])
     t = theme_tokens()
     if by_sign:
         colors = [t["accent"] if v >= 0 else t["negative"] for v in df[y]]
@@ -177,7 +159,6 @@ def scatter_plot(df, x, y, ax=None, title=None, color=None, trendline=False):
     """Scatter: translucent blue points with a soft shadow; optional burnt-orange
     linear trend line."""
     ax = _axes(ax)
-    _require(df, [x, y])
     t = theme_tokens()
     xs, ys = np.asarray(df[x], float), np.asarray(df[y], float)
     pts = ax.scatter(xs, ys, color=color or t["accent"], s=70, alpha=0.72,
@@ -189,3 +170,20 @@ def scatter_plot(df, x, y, ax=None, title=None, color=None, trendline=False):
         ax.plot(lx, m * lx + b, color=t["emphasis"], linewidth=3,
                 solid_capstyle="round", zorder=4)
     return _style(ax, title, x, y)
+
+def hist_plot(df, column, bins=20, ax=None, title=None, color=None):
+    """Histogram with a smooth density curve (the distribution line) overlaid."""
+    ax = _axes(ax)
+    t = theme_tokens()
+    v = np.asarray(df[column], float)
+    v = v[~np.isnan(v)]
+    counts, _, patches = ax.hist(v, bins=bins, color=color or t["accent"],
+                                 edgecolor=t["outline"], linewidth=1)
+    for p in patches:
+        p.set_path_effects(_shadow())
+    g = np.linspace(v.min(), v.max(), 200)
+    h = 1.06 * v.std() * len(v) ** -0.2 or 1.0           # Silverman bandwidth
+    d = np.exp(-((g[:, None] - v) / h) ** 2 / 2).sum(1) / (len(v) * h * 2.5066)
+    ax.plot(g, d * (counts.max() / (d.max() or 1)), color=t["emphasis"],
+            linewidth=3, solid_capstyle="round", zorder=4)
+    return _style(ax, title, column, "count")

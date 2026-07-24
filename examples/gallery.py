@@ -39,13 +39,14 @@ def make_data():
         "marketing_spend_k": spend,
         "new_subscribers": (spend * 21 + rng.normal(0, 55, 90) + 40).round(),
     })
-    return mrr, regions, qoq, signups
+    orders = pd.DataFrame({"order_value": rng.gamma(3.0, 9.0, 800)})
+    return mrr, regions, qoq, signups, orders
 
 
 def build(mode: str) -> plt.Figure:
     dv.set_theme(mode)
     t = dv.theme_tokens(mode)
-    mrr, regions, qoq, signups = make_data()
+    mrr, regions, qoq, signups, orders = make_data()
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 8))
     fig.set_facecolor(t["page"])
@@ -57,8 +58,9 @@ def build(mode: str) -> plt.Figure:
                  title="Recurring revenue nearly doubled")
     axes[0, 0].set_ylabel("MRR ($)")
 
-    dv.bar_plot(regions, x="region", y="subscribers", ax=axes[0, 1],
-                highlight="West", title="One region in focus: the West")
+    h = dv.hist_plot(orders, column="order_value", bins=26, ax=axes[0, 1],
+                     title="Order values cluster near $25")
+    h.set_xlabel("order value ($)")
 
     dv.bar_plot(qoq, x="quarter", y="net_add_change", ax=axes[1, 0],
                 by_sign=True, title="Net adds dipped in Q3, rebounded in Q4")
