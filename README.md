@@ -14,7 +14,18 @@ object, so the library stays easy to read, test, and debug.
 A hand-drawn, editorial look — muted earthy palette, bold outlines, rounded
 shapes, arrow-tipped axes — in both light and dark themes.
 
-The six chart styles (`python examples/gallery.py`):
+### A worked example
+
+Every chart type on one realistic (fictional) dataset — the 2026 year of
+*Brewed & Co.*, a coffee-subscription company (`python examples/showcase.py`):
+
+| Light | Dark |
+| --- | --- |
+| ![Worked example, light theme](docs/images/showcase-light.png) | ![Worked example, dark theme](docs/images/showcase-dark.png) |
+
+### The chart styles
+
+The six styles on their own (`python examples/gallery.py`):
 
 | Light | Dark |
 | --- | --- |

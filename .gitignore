@@ -14,6 +14,8 @@ dist/
 .venv/
 venv/
 
-# Generated example output
-gallery-*.png
-color-system-*.png
+# Generated example output (working copies at the repo root only;
+# committed previews live under docs/images/)
+/gallery-*.png
+/color-system-*.png
+/showcase-*.png
