@@ -21,12 +21,14 @@ THEMES = {
         series=["#339CFF", "#B4652C", "#5DC977", "#3AB9B1", "#7E5A8C"],
         sd="#1A1C1F", sd_a=0.12, sl="#ffffff", sl_a=0.82,
     ),
+    # Dark = Rosé Pine Moon: navy base, pine (blue) accent, gold emphasis, love
+    # for negative, and a pine/gold/love/foam/iris series.
     "dark": dict(
-        page="#0f1012", primary="#FFFFFF", secondary="#c7c9cd", muted="#8a8d92",
-        grid="#FFFFFF", grid_alpha=0.12, baseline="#3a3c40", outline="#161719",
-        accent="#83C3FF", emphasis="#F59A56", negative="#FF8549",
-        series=["#83C3FF", "#F59A56", "#74D58B", "#5ACBC2", "#B39DDB"],
-        sd="#000000", sd_a=0.45, sl="#ffffff", sl_a=0.06,
+        page="#232136", primary="#e0def4", secondary="#908caa", muted="#6e6a86",
+        grid="#908caa", grid_alpha=0.14, baseline="#44415a", outline="#232136",
+        accent="#3e8fb0", emphasis="#f6c177", negative="#eb6f92",
+        series=["#3e8fb0", "#f6c177", "#eb6f92", "#9ccfd8", "#c4a7e7"],
+        sd="#191724", sd_a=0.55, sl="#e0def4", sl_a=0.05,
     ),
 }
 _active = "light"
