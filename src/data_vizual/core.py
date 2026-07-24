@@ -83,13 +83,16 @@ def missing_value_counts(df: pd.DataFrame) -> pd.Series:
     return df.isna().sum().sort_values(ascending=False)
 
 def _shadow(scale: float = 1.0) -> list:
-    """Soft neomorphic drop-shadow (dark below, light above) for patch marks."""
+    """Soft neomorphic extrude: a blurred dark bloom below and a light lift
+    above, faked by stacking offset shadow copies with decaying alpha."""
     t = theme_tokens()
-    return [pe.SimplePatchShadow(offset=(0, -2.4 * scale), shadow_rgbFace=t["sd"],
-                                 alpha=t["sd_a"]),
-            pe.SimplePatchShadow(offset=(0, 1.4 * scale), shadow_rgbFace=t["sl"],
-                                 alpha=t["sl_a"]),
-            pe.Normal()]
+    fx = [pe.SimplePatchShadow(offset=(0, -o * scale), shadow_rgbFace=t["sd"],
+                               alpha=t["sd_a"] * a)
+          for o, a in ((1.0, 1.0), (2.6, 0.7), (4.4, 0.45), (6.5, 0.25))]
+    fx += [pe.SimplePatchShadow(offset=(0, o * scale), shadow_rgbFace=t["sl"],
+                                alpha=t["sl_a"] * a)
+           for o, a in ((0.8, 1.0), (2.0, 0.5))]
+    return fx + [pe.Normal()]
 
 def _axes(ax):
     """Return a themed Axes, creating a transparent-backed one if needed."""
