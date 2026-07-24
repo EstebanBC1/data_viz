@@ -1,8 +1,7 @@
-"""Tests for data_vizual.core.
+"""Tests for data_vizual (MVP surface).
 
-These cover the happy path for each public function, the theme/design-system
-behavior, and the error and empty states. Plotting tests use matplotlib's
-non-interactive "Agg" backend so they run headless (no display needed) in CI.
+Plotting tests use matplotlib's non-interactive "Agg" backend so they run
+headless in CI.
 """
 
 import matplotlib
@@ -18,33 +17,28 @@ import data_vizual as dv
 
 @pytest.fixture(autouse=True)
 def _reset_theme():
-    """Keep tests isolated: start each on the light theme."""
     dv.set_theme("light")
     yield
+    plt.close("all")
 
 
 @pytest.fixture
 def df():
-    """A tiny DataFrame with a missing value to exercise the summaries."""
-    return pd.DataFrame(
-        {
-            "day": [1, 2, 3, 4],
-            "revenue": [10.0, 20.0, 30.0, None],
-            "region": ["N", "S", "N", "S"],
-        }
-    )
+    return pd.DataFrame({
+        "month": [1, 2, 3, 4],
+        "revenue": [10.0, 20.0, 30.0, None],
+        "region": ["N", "S", "N", "S"],
+    })
 
 
-# --- Loading ---------------------------------------------------------------
+# --- loading & summaries ---------------------------------------------------
 
 
 def test_load_csv_reads_file(tmp_path, df):
-    csv_path = tmp_path / "data.csv"
-    df.to_csv(csv_path, index=False)
-
-    loaded = dv.load_csv(csv_path)
-
-    assert list(loaded.columns) == ["day", "revenue", "region"]
+    path = tmp_path / "d.csv"
+    df.to_csv(path, index=False)
+    loaded = dv.load_csv(path)
+    assert list(loaded.columns) == ["month", "revenue", "region"]
     assert len(loaded) == 4
 
 
@@ -53,84 +47,32 @@ def test_load_csv_missing_file_raises():
         dv.load_csv("does/not/exist.csv")
 
 
-# --- Summaries -------------------------------------------------------------
-
-
-def test_column_types(df):
-    types = dv.column_types(df)
-    # Check the kind of type, not an exact dtype string: pandas versions differ
-    # (e.g. text may be "object" or a dedicated string dtype).
-    assert pd.api.types.is_integer_dtype(types["day"])
-    assert not pd.api.types.is_numeric_dtype(types["region"])
+def test_summary_statistics(df):
+    assert dv.summary_statistics(df).loc["count", "revenue"] == 3
 
 
 def test_missing_value_counts(df):
     missing = dv.missing_value_counts(df)
-    # revenue has the only gap and should sort to the top.
     assert missing.iloc[0] == 1
     assert missing["revenue"] == 1
-    assert missing["day"] == 0
 
 
-def test_summary_statistics(df):
-    stats = dv.summary_statistics(df)
-    # describe() reports numeric columns; "count" excludes the missing value.
-    assert stats.loc["count", "revenue"] == 3
-
-
-# --- Theme / design system -------------------------------------------------
+# --- theme -----------------------------------------------------------------
 
 
 def test_available_themes():
     assert set(dv.available_themes()) == {"light", "dark"}
 
 
-def test_series_palette_leads_with_muted_blue():
-    # The earthy palette leads with a muted steel blue (not a bright primary),
-    # and both themes carry a full six-color set.
-    assert dv.theme_tokens("light")["series"][0] == "#5B7DA6"
-    assert len(dv.theme_tokens("light")["series"]) == 6
-    assert len(dv.theme_tokens("dark")["series"]) == 6
-
-
-def test_outline_token_present():
-    assert "outline" in dv.theme_tokens("light")
-    assert "outline" in dv.theme_tokens("dark")
-
-
-def test_semantic_tokens_present():
-    tokens = dv.theme_tokens("light")
-    for role in ("good", "warning", "bad", "neutral", "accent", "context",
-                 "reference"):
-        assert role in tokens
-
-
-def test_bar_by_sign_colors_and_zero_line():
-    d = pd.DataFrame({"q": ["A", "B", "C"], "delta": [12, -5, 8]})
-    ax = dv.bar_plot(d, x="q", y="delta", by_sign=True)
-    good, bad = dv.theme_tokens()["good"], dv.theme_tokens()["bad"]
-    facecolors = [p.get_facecolor() for p in ax.patches]
-    assert plt.matplotlib.colors.to_hex(facecolors[0]).lower() == good.lower()
-    assert plt.matplotlib.colors.to_hex(facecolors[1]).lower() == bad.lower()
-    # A zero reference line was added.
-    assert any(abs(ln.get_ydata()[0]) < 1e-9 for ln in ax.lines)
-
-
-def test_bar_highlight_uses_neutral_for_others():
-    d = pd.DataFrame({"region": ["N", "S", "E"], "sales": [3, 5, 4]})
-    ax = dv.bar_plot(d, x="region", y="sales", highlight="S")
-    accent = dv.theme_tokens()["accent"]
-    neutral = dv.theme_tokens()["neutral"]
-    hexes = [plt.matplotlib.colors.to_hex(p.get_facecolor()).lower()
-             for p in ax.patches]
-    assert hexes[1] == accent.lower()      # highlighted
-    assert hexes[0] == neutral.lower()     # context
+def test_theme_leads_with_blue():
+    assert dv.theme_tokens("light")["accent"] == "#339CFF"
+    assert dv.theme_tokens("light")["emphasis"] == "#B4652C"
+    assert dv.theme_tokens("light")["series"][0] == "#339CFF"
 
 
 def test_theme_tokens_are_copies():
-    # Mutating a returned token dict must not corrupt the shared palette.
-    tokens = dv.theme_tokens("light")
-    tokens["series"][0] = "#000000"
+    t = dv.theme_tokens("light")
+    t["series"][0] = "#000000"
     assert dv.theme_tokens("light")["series"][0] != "#000000"
 
 
@@ -141,125 +83,65 @@ def test_theme_tokens_unknown_raises():
 
 def test_set_theme_updates_color_cycle():
     dv.set_theme("dark")
-    cycle_colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-    assert cycle_colors[0] == dv.theme_tokens("dark")["series"][0]
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    assert colors[0] == dv.theme_tokens("dark")["accent"]
 
 
-def test_set_theme_returns_tokens():
-    tokens = dv.set_theme("light")
-    assert tokens["surface"] == "#ffffff"
-
-
-# --- Plots -----------------------------------------------------------------
-# Each plot returns an Axes; we assert the return type and that data landed on
-# it, which is enough to catch wiring bugs without checking pixels.
+# --- charts ----------------------------------------------------------------
 
 
 def test_line_plot_returns_axes(df):
-    ax = dv.line_plot(df, x="day", y="revenue")
-    assert ax.get_xlabel() == "day"
-    assert len(ax.lines) == 1
-
-
-def test_area_plot_gradient_returns_axes(df):
-    ax = dv.area_plot(df, x="day", y="revenue", gradient=True)
-    # Colored top edge is a line; the gradient fill is an image below it.
-    assert len(ax.lines) == 1
-    assert len(ax.images) == 1
-
-
-def test_area_plot_flat_fill_is_default(df):
-    ax = dv.area_plot(df, x="day", y="revenue")  # flat + outline by default
-    # Flat fill uses fill_between (a PolyCollection), no gradient image.
-    assert len(ax.images) == 0
-    assert len(ax.collections) >= 1
-
-
-def test_bundled_nunito_font_registered():
-    import matplotlib.font_manager as fm
-    names = {f.name for f in fm.fontManager.ttflist}
-    assert "Nunito" in names
-
-
-def test_rounded_bars_are_path_patches(df):
-    ax = dv.bar_plot(df, x="region", y="day")  # rounded=True by default
-    from matplotlib.patches import PathPatch
-    assert len(ax.patches) == 4
-    assert all(isinstance(p, PathPatch) for p in ax.patches)
-
-
-def test_rounded_can_be_disabled(df):
-    ax = dv.bar_plot(df, x="region", y="day", rounded=False)
-    from matplotlib.patches import Rectangle
-    assert all(isinstance(p, Rectangle) for p in ax.patches)
-
-
-def test_lollipop_plot_returns_axes(df):
-    ax = dv.lollipop_plot(df, x="region", y="day")
-    # A stem + a dot per row => at least 2 line artists per category.
-    assert len(ax.lines) >= len(df)
+    ax = dv.line_plot(df, x="month", y="revenue")
+    assert ax.get_xlabel() == "month"
+    assert len(ax.lines) >= 1
 
 
 def test_bar_plot_returns_axes(df):
-    ax = dv.bar_plot(df, x="region", y="day")
-    assert len(ax.patches) == 4  # one bar per row
+    ax = dv.bar_plot(df, x="region", y="month")
+    assert len(ax.patches) == 4
 
 
-def test_histogram_returns_axes(df):
-    ax = dv.histogram(df, column="day", bins=4)
-    assert ax.get_ylabel() == "Frequency"
-    assert len(ax.patches) == 4  # one patch per bin
+def test_bar_by_sign_colors_and_zero_line():
+    d = pd.DataFrame({"q": ["A", "B", "C"], "delta": [12, -5, 8]})
+    ax = dv.bar_plot(d, x="q", y="delta", by_sign=True)
+    accent = dv.theme_tokens()["accent"]
+    negative = dv.theme_tokens()["negative"]
+    faces = [plt.matplotlib.colors.to_hex(p.get_facecolor()).lower()
+             for p in ax.patches]
+    assert faces[0] == accent.lower()
+    assert faces[1] == negative.lower()
+    assert any(abs(ln.get_ydata()[0]) < 1e-9 for ln in ax.lines)
+
+
+def test_bar_highlight_uses_muted_for_others():
+    d = pd.DataFrame({"region": ["N", "S", "E"], "sales": [3, 5, 4]})
+    ax = dv.bar_plot(d, x="region", y="sales", highlight="S")
+    faces = [plt.matplotlib.colors.to_hex(p.get_facecolor()).lower()
+             for p in ax.patches]
+    assert faces[1] == dv.theme_tokens()["accent"].lower()
+    assert faces[0] == dv.theme_tokens()["muted"].lower()
 
 
 def test_scatter_plot_returns_axes(df):
-    ax = dv.scatter_plot(df, x="day", y="revenue")
-    assert ax.get_xlabel() == "day"
+    ax = dv.scatter_plot(df, x="month", y="revenue")
     assert len(ax.collections) == 1
 
 
-def test_title_is_set_and_left_aligned(df):
-    ax = dv.line_plot(df, x="day", y="revenue", title="Revenue climbs")
+def test_scatter_trendline_adds_line(df):
+    ax = dv.scatter_plot(df, x="month", y="revenue", trendline=True)
+    assert len(ax.lines) == 1
+
+
+def test_title_is_left_aligned(df):
+    ax = dv.line_plot(df, x="month", y="revenue", title="Revenue climbs")
     assert ax.get_title(loc="left") == "Revenue climbs"
-
-
-# --- Consistent styling across chart types ---------------------------------
-
-
-@pytest.mark.parametrize(
-    "make_plot",
-    [
-        lambda d: dv.line_plot(d, x="day", y="revenue"),
-        lambda d: dv.bar_plot(d, x="region", y="day"),
-        lambda d: dv.histogram(d, column="day"),
-        lambda d: dv.scatter_plot(d, x="day", y="revenue"),
-    ],
-)
-def test_chrome_is_consistent(df, make_plot):
-    ax = make_plot(df)
-    # Top and right spines are always hidden so the data dominates.
-    assert not ax.spines["top"].get_visible()
-    assert not ax.spines["right"].get_visible()
-
-
-# --- Error and empty states ------------------------------------------------
 
 
 def test_missing_column_raises_clear_error(df):
     with pytest.raises(KeyError, match="nope"):
-        dv.line_plot(df, x="day", y="nope")
+        dv.line_plot(df, x="month", y="nope")
 
 
-def test_empty_dataframe_renders_placeholder():
-    empty = pd.DataFrame({"day": [], "revenue": []})
-    ax = dv.line_plot(empty, x="day", y="revenue")
-    # No line drawn, and a single centered message is shown instead.
-    assert len(ax.lines) == 0
-    texts = [t.get_text() for t in ax.texts]
-    assert any("No data" in t for t in texts)
-
-
-def test_direct_label_adds_annotation(df):
-    ax = dv.line_plot(df, x="day", y="revenue")
-    before = len(ax.texts)
-    dv.direct_label(ax, 3, 30, "peak")
-    assert len(ax.texts) == before + 1
+def test_transparent_axes_background(df):
+    ax = dv.bar_plot(df, x="region", y="month")
+    assert ax.patch.get_alpha() == 0

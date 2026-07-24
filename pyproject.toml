@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "data_vizual"
-version = "0.3.0"
+version = "0.4.0"
 description = "Bare-bones pandas helpers and styled matplotlib plots for building a personal data-visualization aesthetic."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -33,13 +33,6 @@ Repository = "https://github.com/EstebanBC1/data_viz"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/data_vizual"]
-
-# Ship the bundled Nunito font (and its OFL license) inside the wheel.
-[tool.hatch.build]
-artifacts = [
-    "src/data_vizual/fonts/*.ttf",
-    "src/data_vizual/fonts/*.txt",
-]
 
 [tool.pytest.ini_options]
 addopts = "-q"

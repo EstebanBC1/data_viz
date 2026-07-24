@@ -11,32 +11,14 @@ object, so the library stays easy to read, test, and debug.
 
 ## Gallery
 
-A hand-drawn, editorial look — muted earthy palette, bold outlines, rounded
-shapes, arrow-tipped axes — in both light and dark themes.
-
-### A worked example
-
-Every chart type on one realistic (fictional) dataset — the 2026 year of
-*Brewed & Co.*, a coffee-subscription company (`python examples/showcase.py`):
+A playful, softly dimensional look — a blue-led palette (burnt orange for
+emphasis), soft mark shadows, quiet unframed axes, and faint gridlines — in both
+light and dark themes. Below: a small dashboard for a fictional coffee company
+(`python examples/gallery.py`).
 
 | Light | Dark |
 | --- | --- |
-| ![Worked example, light theme](docs/images/showcase-light.png) | ![Worked example, dark theme](docs/images/showcase-dark.png) |
-
-### The chart styles
-
-The six styles on their own (`python examples/gallery.py`):
-
-| Light | Dark |
-| --- | --- |
-| ![Chart styles, light theme](docs/images/styles-light.png) | ![Chart styles, dark theme](docs/images/styles-dark.png) |
-
-Color used deliberately — single series, multiple series, highlight, and
-positive/negative (`python examples/color_system.py`):
-
-| Light | Dark |
-| --- | --- |
-| ![Color system, light theme](docs/images/colors-light.png) | ![Color system, dark theme](docs/images/colors-dark.png) |
+| ![Gallery, light theme](docs/images/gallery-light.png) | ![Gallery, dark theme](docs/images/gallery-dark.png) |
 
 ## Installation
 
@@ -57,129 +39,69 @@ pip install data_vizual
 ```python
 import data_vizual as dv
 
-dv.set_theme("light")        # pick the visual language once ("light" or "dark")
+dv.set_theme("light")        # pick the theme once ("light" or "dark")
 
-# 1. Load
 df = dv.load_csv("data/sales.csv")
-
-# 2. Summarize
-dv.column_types(df)          # dtype of each column
-dv.missing_value_counts(df)  # missing values per column (highest first)
 dv.summary_statistics(df)    # count / mean / std / min / quartiles / max
+dv.missing_value_counts(df)  # missing values per column (highest first)
 
-# 3. Plot  (each returns a matplotlib Axes you can keep customizing)
-ax = dv.histogram(df, "revenue", bins=20, title="Revenue is right-skewed")
-
-dv.line_plot(df, x="day", y="revenue", title="Revenue climbed all year")
-dv.area_plot(df, x="day", y="revenue")   # gradient fill adds depth
-dv.bar_plot(df, x="region", y="revenue")
-dv.scatter_plot(df, x="ad_spend", y="revenue")
-```
-
-See it for yourself — the examples gallery renders every chart type in both
-themes:
-
-```bash
-python examples/gallery.py          # writes gallery-light.png and gallery-dark.png
-python examples/gallery.py --show   # or open interactive windows
+# Each plot returns a matplotlib Axes you can keep customizing.
+dv.line_plot(df, x="month", y="revenue", title="Revenue nearly doubled")
+dv.bar_plot(df, x="quarter", y="growth", by_sign=True)      # blue / negative
+dv.bar_plot(df, x="region", y="sales", highlight="West")    # one bar in focus
+dv.scatter_plot(df, x="ad_spend", y="signups", trendline=True)
 ```
 
 ## Design system
 
-The look is **hand-drawn / editorial**: a warm paper (or charcoal) surface, a
-**muted earthy palette**, **bold near-black outlines** on every mark, chunky
-rounded shapes, and **arrow-tipped axes** instead of a gridlines-and-box frame.
-Playful and warm — closer to a printed infographic than a dashboard. Two themes
-ship: **`light`** and **`dark`**.
+The look is **playful, editorial, and softly dimensional**: blue carries most
+of the visual weight, **burnt orange is reserved for emphasis**, marks have a
+soft theme-aware drop-shadow (depth on the data, not cards around it), chart
+backgrounds are transparent and unframed, gridlines are thin and low-opacity,
+and axes stay quiet. Two themes ship: **`light`** and **`dark`**.
 
 **Color tokens** (read any with `dv.theme_tokens()`):
 
 | Token | Role |
 | --- | --- |
-| `surface` / `page` | chart & figure backgrounds (warm paper / charcoal) |
+| `page` | figure background |
 | `primary` / `secondary` / `muted` | text ink |
-| `outline` | bold near-black (or off-white) mark outlines |
-| `baseline` | the arrow-axes ink |
-| `accent` | default single-series color — **muted blue `#5B7DA6`** |
-| `series` | the 6-color earthy palette |
-| `good` / `warning` / `bad` / `neutral` | reserved semantic colors |
-| `context` / `reference` | de-emphasized comparison series & baselines |
+| `accent` | primary blue — carries most of the weight |
+| `emphasis` | burnt orange — emphasis / trend lines only |
+| `negative` | negative / destructive orange-red |
+| `series` | categorical palette (blue, burnt orange, green, teal, plum) |
+| `grid` / `baseline` | quiet gridline & axis colors |
+| `shadow_*` | the soft neomorphic drop-shadow pair |
 
-**Series palette** — a muted, earthy set (no bright corporate primaries):
+| light blue | burnt orange | green | teal | negative |
+| --- | --- | --- | --- | --- |
+| `#339CFF` | `#B4652C` | `#5DC977` | `#3AB9B1` | `#E25507` |
 
-| 1 steel blue | 2 mustard | 3 sage | 4 terracotta | 5 warm gray | 6 plum |
-| --- | --- | --- | --- | --- | --- |
-| `#5B7DA6` | `#E0B03E` | `#6E9B57` | `#C6573A` | `#8E8B84` | `#7E5A8C` |
+Color is spent deliberately, always paired with position, a label, or a line
+so nothing relies on color alone: `bar_plot(..., by_sign=True)` colors bars
+blue (positive) / orange-red (negative); `bar_plot(..., highlight="West")`
+accents one bar and mutes the rest; `scatter_plot(..., trendline=True)` adds a
+burnt-orange regression line. Insight-led titles (`title=`) act as direct
+labels.
 
-Colors are still **spent deliberately**, always paired with a marker, line
-style, or direct label so nothing relies on color alone:
-
-- **Single series** → the accent (the subject is the emphasis).
-- **Multiple series** → the palette in order + markers/line styles.
-  `line_plot(..., marker="o", linestyle="--")`.
-- **Highlight a comparison** → the focus series in `accent`, the rest in
-  `context` gray at low `alpha`; or `bar_plot(..., highlight="East")`.
-- **Positive / negative** → `bar_plot(..., by_sign=True)` colors bars
-  sage/terracotta by sign and adds a zero reference line.
-- **Semantic** → `good`/`warning`/`bad`/`neutral` are reserved for meaning.
-
-Run `python examples/color_system.py` to render all of these in both themes.
-
-`area_plot` fills flat under a bold outline by default; pass `gradient=True`
-for a theme-aware depth gradient instead.
-
-**Type & shape.** The library bundles **Nunito** (a friendly, rounded sans,
-SIL OFL) and registers it automatically, so the approachable look renders
-anywhere without a system font install. Bars get a soft **rounded data-end**
-(square on the baseline) by default — pass `rounded=False` for crisp corners.
-`lollipop_plot` offers a lighter alternative to a wall of bars.
-
-**What the defaults do**
-
-- Left-aligned title as the single takeaway (`title=` on any plot).
-- Top/right spines removed; remaining axes and a horizontal-only grid are
-  hairlines sitting *behind* the data.
-- Clean system-sans typography with a clear size hierarchy.
-- Thousands-grouped numbers with no noisy trailing `.0`.
-- Frameless legends; a `direct_label(ax, x, y, text)` helper for labeling the
-  point that tells the story instead of a legend.
-- A tidy empty state ("No data to display") instead of a blank chart, and clear
-  errors that name a missing column and list what's available.
-
-**Customization.** Attractive defaults are easy; overrides are always available:
-
-```python
-dv.set_theme("dark")                              # switch themes
-dv.bar_plot(df, "region", "sales", color="#eb6834")  # override a single color
-ax = dv.line_plot(df, "day", "revenue")
-ax.set_ylim(0, 500)                               # it's a normal Axes — tweak freely
-```
-
-Every plot also accepts an existing `ax=`, so you can compose charts onto your
-own figures (e.g. small multiples, like the gallery).
-
-> Note: charts are static matplotlib figures, so there is no animation by
-> design (which keeps motion out of the way). Web concepts like
-> `prefers-reduced-motion` and loading states don't apply to static output.
+> Scope: this is an MVP (core module under 200 lines) — three chart types on a
+> shared theme. Static matplotlib output, so web concepts like
+> `prefers-reduced-motion`, DOM tooltips, and keyboard focus don't apply.
 
 ## API
 
 | Function | Purpose |
 | --- | --- |
+| `set_theme(mode)` / `theme_tokens()` / `available_themes()` | Apply and read the theme tokens. |
 | `load_csv(path, **kwargs)` | Read a CSV into a DataFrame (clear error if missing). |
-| `column_types(df)` | Dtype of each column. |
-| `missing_value_counts(df)` | Missing values per column, sorted descending. |
 | `summary_statistics(df)` | Descriptive stats for numeric columns. |
-| `line_plot(df, x, y, ...)` | Line chart of `y` over `x` (`marker`, `linestyle`, `alpha` for multi-series). |
-| `area_plot(df, x, y, gradient=True)` | Filled area with a subtle depth gradient (`gradient=False` for a flat wash). |
-| `lollipop_plot(df, x, y, highlight=None)` | A lighter, friendlier take on the bar chart (stem + dot). |
-| `bar_plot(df, x, y, ...)` | Bar chart with rounded tops; `by_sign` (green/red), `highlight`, `rounded=False`. |
-| `histogram(df, column, bins=10, ax=None)` | Distribution of one numeric column. |
-| `scatter_plot(df, x, y, ax=None)` | Relationship between two numeric columns. |
+| `missing_value_counts(df)` | Missing values per column, sorted descending. |
+| `line_plot(df, x, y, ...)` | Line + open markers with a soft shadow. |
+| `bar_plot(df, x, y, ...)` | Bars with soft depth + value labels; `by_sign`, `highlight`. |
+| `scatter_plot(df, x, y, trendline=False)` | Translucent points; optional burnt-orange trend line. |
 
-Every plot function accepts an optional `ax`, so you can compose charts onto
-your own figures, and returns the `Axes` rather than showing it — keeping you
-in control of styling and making plots easy to test.
+Every plot accepts an optional `ax=` and returns the `Axes`, so you can compose
+charts onto your own figures and keep styling in your control.
 
 ## Project layout
 

@@ -1,19 +1,16 @@
-"""Render a small gallery of data_vizual's default charts.
+"""Render the MVP chart gallery on realistic (fictional) data.
 
-Run it to see the refined defaults in both light and dark themes::
+A small dashboard for *Brewed & Co.*, a made-up coffee-subscription company —
+one figure per theme, showing the three chart types on data shaped like the
+real thing::
 
-    python examples/gallery.py            # writes gallery-light.png + gallery-dark.png
-    python examples/gallery.py --show     # open an interactive window instead
+    python examples/gallery.py     # writes gallery-light.png + gallery-dark.png
 
-The data here is synthetic (generated in-code), so the example is fully
-self-contained and commits no CSVs (see CLAUDE.md).
+Data is generated in-code (deterministic), so nothing is committed.
 """
 
 from __future__ import annotations
 
-import argparse
-
-import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -21,100 +18,66 @@ import pandas as pd
 import data_vizual as dv
 
 
-def make_data() -> dict[str, pd.DataFrame]:
-    """Build a few tiny, deterministic datasets to plot."""
-    rng = np.random.default_rng(7)  # fixed seed -> stable, comparable output
-
-    months = pd.date_range("2026-01-01", periods=12, freq="MS")
-    trend = pd.DataFrame(
-        {"month": months, "revenue": np.linspace(120, 320, 12) + rng.normal(0, 8, 12)}
-    )
-
-    regions = pd.DataFrame(
-        {"region": ["North", "South", "East", "West", "Central"],
-         "sales": [820, 660, 940, 510, 730]}
-    )
-
-    distribution = pd.DataFrame({"order_value": rng.gamma(2.0, 40.0, 400)})
-
-    relationship = pd.DataFrame({"ad_spend": rng.uniform(5, 60, 120)})
-    relationship["revenue"] = (
-        relationship["ad_spend"] * 4.5 + rng.normal(0, 25, 120)
-    )
-
-    return {
-        "trend": trend,
-        "regions": regions,
-        "distribution": distribution,
-        "relationship": relationship,
-    }
+def make_data():
+    rng = np.random.default_rng(2026)
+    months = np.arange(1, 13)
+    mrr = pd.DataFrame({
+        "month": months,
+        "mrr": np.array([42, 45, 48, 52, 55, 58, 61, 64, 74, 88, 103, 120]) * 1000
+        + rng.normal(0, 700, 12),
+    })
+    regions = pd.DataFrame({
+        "region": ["West", "Northeast", "South", "Midwest", "Intl"],
+        "subscribers": [3180, 2760, 2410, 1880, 1230],
+    })
+    qoq = pd.DataFrame({
+        "quarter": ["Q1", "Q2", "Q3", "Q4"],
+        "net_add_change": [18, 7, -6, 12],
+    })
+    spend = rng.uniform(3, 42, 90)
+    signups = pd.DataFrame({
+        "marketing_spend_k": spend,
+        "new_subscribers": (spend * 21 + rng.normal(0, 55, 90) + 40).round(),
+    })
+    return mrr, regions, qoq, signups
 
 
-def build_gallery(mode: str, data: dict[str, pd.DataFrame]) -> plt.Figure:
-    """Draw all four chart types on one figure using the given theme."""
+def build(mode: str) -> plt.Figure:
     dv.set_theme(mode)
-    tokens = dv.theme_tokens(mode)
+    t = dv.theme_tokens(mode)
+    mrr, regions, qoq, signups = make_data()
 
-    # A 2x2 layout of small multiples; generous spacing lets each breathe.
-    fig, axes = plt.subplots(3, 2, figsize=(11, 12))
-    fig.set_facecolor(tokens["page"])
-    fig.suptitle(
-        f"data_vizual chart styles — {mode} theme",
-        x=0.06, ha="left", fontsize=18, fontweight="semibold",
-        color=tokens["primary"],
-    )
+    fig, axes = plt.subplots(2, 2, figsize=(11, 8))
+    fig.set_facecolor(t["page"])
+    fig.suptitle(f"Brewed & Co. — FY2026   ·   {mode} theme",
+                 x=0.06, ha="left", fontsize=17, fontweight="medium",
+                 color=t["primary"])
 
-    area_ax = dv.area_plot(
-        data["trend"], x="month", y="revenue", ax=axes[0, 0],
-        title="Area — revenue grew all year",
-    )
-    # Thin the monthly date ticks so labels don't collide in a narrow panel
-    # (tick density depends on panel width, so it's set here, not in the library).
-    area_ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
-    area_ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+    dv.line_plot(mrr, x="month", y="mrr", ax=axes[0, 0],
+                 title="Recurring revenue nearly doubled")
+    axes[0, 0].set_ylabel("MRR ($)")
 
-    dv.bar_plot(
-        data["regions"], x="region", y="sales", ax=axes[0, 1],
-        title="Bar — rounded, friendly tops",
-    )
-    dv.lollipop_plot(
-        data["regions"], x="region", y="sales", ax=axes[1, 0],
-        title="Lollipop — a lighter take on bars",
-    )
-    dv.bar_plot(
-        data["regions"], x="region", y="sales", ax=axes[1, 1],
-        highlight="East", title="Highlight — one bar in focus",
-    )
-    dv.histogram(
-        data["distribution"], column="order_value", bins=24, ax=axes[2, 0],
-        title="Histogram — order values are skewed",
-    )
-    dv.scatter_plot(
-        data["relationship"], x="ad_spend", y="revenue", ax=axes[2, 1],
-        title="Scatter — ad spend tracks revenue",
-    )
+    dv.bar_plot(regions, x="region", y="subscribers", ax=axes[0, 1],
+                highlight="West", title="One region in focus: the West")
 
-    fig.tight_layout(rect=(0, 0, 1, 0.96))
+    dv.bar_plot(qoq, x="quarter", y="net_add_change", ax=axes[1, 0],
+                by_sign=True, title="Net adds dipped in Q3, rebounded in Q4")
+    axes[1, 0].set_ylabel("net-add change (%)")
+
+    dv.scatter_plot(signups, x="marketing_spend_k", y="new_subscribers",
+                    ax=axes[1, 1], trendline=True,
+                    title="Marketing spend lifts signups")
+
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
     return fig
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--show", action="store_true",
-                        help="Open interactive windows instead of saving PNGs.")
-    args = parser.parse_args()
-
-    data = make_data()
     for mode in ("light", "dark"):
-        fig = build_gallery(mode, data)
-        if args.show:
-            continue
+        fig = build(mode)
         out = f"gallery-{mode}.png"
         fig.savefig(out, dpi=150)
         print(f"wrote {out}")
-
-    if args.show:
-        plt.show()
 
 
 if __name__ == "__main__":
