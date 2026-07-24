@@ -76,6 +76,14 @@ def load_csv(path, **read_csv_kwargs) -> pd.DataFrame:
         raise FileNotFoundError(f"No CSV file found at: {p}")
     return pd.read_csv(p, **read_csv_kwargs)
 
+def summary_statistics(df: pd.DataFrame) -> pd.DataFrame:
+    """describe() for the numeric columns."""
+    return df.describe()
+
+def missing_value_counts(df: pd.DataFrame) -> pd.Series:
+    """Missing values per column, highest first."""
+    return df.isna().sum().sort_values(ascending=False)
+
 def _shadow(scale: float = 1.0) -> list:
     """Soft neomorphic extrude: a blurred dark bloom below + a light lift above,
     faked by stacking offset shadow copies with decaying alpha."""

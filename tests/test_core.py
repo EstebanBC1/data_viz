@@ -47,6 +47,16 @@ def test_load_csv_missing_file_raises():
         dv.load_csv("does/not/exist.csv")
 
 
+def test_summary_statistics(df):
+    assert dv.summary_statistics(df).loc["count", "revenue"] == 3
+
+
+def test_missing_value_counts(df):
+    missing = dv.missing_value_counts(df)
+    assert missing.iloc[0] == 1
+    assert missing["revenue"] == 1
+
+
 # --- theme -----------------------------------------------------------------
 
 

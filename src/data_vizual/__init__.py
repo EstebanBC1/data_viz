@@ -1,8 +1,10 @@
 """data_vizual: playful, softly dimensional pandas + matplotlib charts."""
 
 from .core import (available_themes, bar_plot, hist_plot, line_plot, load_csv,
-                   scatter_plot, set_theme, theme_tokens)
+                   missing_value_counts, scatter_plot, set_theme,
+                   summary_statistics, theme_tokens)
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 __all__ = ["set_theme", "available_themes", "theme_tokens", "load_csv",
-           "line_plot", "bar_plot", "hist_plot", "scatter_plot"]
+           "summary_statistics", "missing_value_counts", "line_plot",
+           "bar_plot", "hist_plot", "scatter_plot"]

@@ -42,6 +42,8 @@ import data_vizual as dv
 dv.set_theme("light")        # pick the theme once ("light" or "dark")
 
 df = dv.load_csv("data/sales.csv")
+dv.summary_statistics(df)    # count / mean / std / min / quartiles / max
+dv.missing_value_counts(df)  # missing values per column (highest first)
 
 # Each plot returns a matplotlib Axes you can keep customizing.
 dv.line_plot(df, x="month", y="revenue", title="Revenue nearly doubled")
@@ -95,6 +97,8 @@ labels.
 | --- | --- |
 | `set_theme(mode)` / `theme_tokens()` / `available_themes()` | Apply and read the theme tokens. |
 | `load_csv(path, **kwargs)` | Read a CSV into a DataFrame (clear error if missing). |
+| `summary_statistics(df)` | Descriptive stats for numeric columns. |
+| `missing_value_counts(df)` | Missing values per column, sorted descending. |
 | `line_plot(df, x, y, ...)` | Line + open markers with a soft shadow. |
 | `hist_plot(df, column, bins=20)` | Histogram with a smooth density (distribution) line overlaid. |
 | `bar_plot(df, x, y, ...)` | Bars with soft depth + value labels; `by_sign`, `highlight`. |
