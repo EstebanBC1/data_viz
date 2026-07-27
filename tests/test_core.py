@@ -122,14 +122,14 @@ def test_bar_highlight_uses_muted_for_others():
     assert faces[0] == dv.theme_tokens()["muted"].lower()
 
 
-def test_bar_pattern_cycles_series_colors_and_adds_texture():
+def test_bar_plot_is_solid_accent_with_no_texture():
     d = pd.DataFrame({"k": ["A", "B", "C"], "v": [5, 3, 4]})
-    ax = dv.bar_plot(d, x="k", y="v", pattern=True)
-    series = dv.theme_tokens()["series"]
+    ax = dv.bar_plot(d, x="k", y="v")
+    accent = dv.theme_tokens()["accent"].lower()
     faces = [plt.matplotlib.colors.to_hex(p.get_facecolor()).lower()
              for p in ax.patches]
-    assert faces[:3] == [series[0].lower(), series[1].lower(), series[2].lower()]
-    assert len(ax.lines) + len(ax.collections) > 0   # clipped motif drawn inside
+    assert faces == [accent, accent, accent]         # one solid color, no rainbow
+    assert len(ax.lines) + len(ax.collections) == 0  # no clipped motif fills
 
 
 def test_scatter_plot_returns_axes(df):
@@ -142,15 +142,12 @@ def test_scatter_trendline_adds_line(df):
     assert len(ax.lines) == 1
 
 
-def test_hist_plot_has_bars_and_density_line():
+def test_hist_plot_has_bars_and_no_overlaid_line():
     import numpy as np
     d = pd.DataFrame({"v": np.random.default_rng(0).normal(0, 1, 500)})
     ax = dv.hist_plot(d, column="v", bins=20)
     assert len(ax.patches) == 20        # histogram bars
-    emph = dv.theme_tokens()["emphasis"].lower()
-    density = [ln for ln in ax.lines
-               if plt.matplotlib.colors.to_hex(ln.get_color()).lower() == emph]
-    assert len(density) == 1            # exactly one overlaid density curve
+    assert len(ax.lines) == 0           # no curve drawn on top of the bars
 
 
 def test_title_is_left_aligned(df):

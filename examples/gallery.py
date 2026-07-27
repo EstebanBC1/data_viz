@@ -63,7 +63,7 @@ def build(mode: str) -> plt.Figure:
     h.set_xlabel("order value ($)")
 
     dv.bar_plot(regions, x="region", y="subscribers", ax=axes[1, 0],
-                pattern=True, title="West leads the subscriber base")
+                title="West leads the subscriber base")
     axes[1, 0].set_ylabel("subscribers")
 
     dv.scatter_plot(signups, x="marketing_spend_k", y="new_subscribers",
@@ -88,7 +88,7 @@ def _ribbon(ax, t):
 
 def hero(mode: str) -> plt.Figure:
     """Replicate the reference 'Espresso drives the catalog' look, built entirely
-    from the library's patterned bar_plot on a soft ribbon backdrop."""
+    from the library's bar_plot on a soft ribbon backdrop."""
     dv.set_theme(mode)
     t = dv.theme_tokens(mode)
     catalog = pd.DataFrame({
@@ -98,7 +98,7 @@ def hero(mode: str) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(11, 6.6))
     fig.set_facecolor(t["page"])
     _ribbon(ax, t)
-    dv.bar_plot(catalog, x="product", y="revenue", ax=ax, pattern=True,
+    dv.bar_plot(catalog, x="product", y="revenue", ax=ax,
                 title="Espresso drives the catalog")
     ax.set_ylim(0, 56)
     ax.annotate("Espresso contributes\n38% of product revenue",
