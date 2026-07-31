@@ -29,6 +29,14 @@ carries the headline while the rest recede to grey:
 | --- | --- |
 | ![Gallery, light theme](docs/images/gallery-light.png) | ![Gallery, dark theme](docs/images/gallery-dark.png) |
 
+> **About the demo data.** These charts use **fictional, in-code data** for a
+> made-up coffee-subscription company, *Brewed & Co.* — monthly recurring
+> revenue, subscribers by region, marketing spend vs. signups, and order
+> values. It is generated deterministically in `examples/gallery.py`
+> (`np.random.default_rng(2026)`), so nothing is committed and the gallery is
+> reproducible. It exists only to show the chart styles — bring your own CSV
+> for real use.
+
 ## Installation
 
 From a local clone (editable install for development):
