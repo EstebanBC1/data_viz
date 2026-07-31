@@ -152,8 +152,7 @@ def bar_plot(df, x, y, ax=None, title=None, color=None, by_sign=False,
         colors = [t["accent"] if c == highlight else t["muted"] for c in df[x]]
     else:
         colors = color or t["accent"]
-    ax.bar(df[x], df[y], color=colors, edgecolor=t["page"], linewidth=1.2,
-           width=0.7)
+    ax.bar(df[x], df[y], color=colors, linewidth=0, width=0.7)
     if by_sign:
         ax.axhline(0, color=t["baseline"], linewidth=1, zorder=1)
     if show_values:
