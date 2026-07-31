@@ -64,10 +64,11 @@ def test_available_themes():
     assert set(dv.available_themes()) == {"light", "dark"}
 
 
-def test_theme_leads_with_blue():
-    assert dv.theme_tokens("light")["accent"] == "#339CFF"
-    assert dv.theme_tokens("light")["emphasis"] == "#B4652C"
-    assert dv.theme_tokens("light")["series"][0] == "#339CFF"
+def test_theme_leads_with_orange():
+    assert dv.theme_tokens("light")["accent"] == "#C44900"
+    assert dv.theme_tokens("light")["support"] == "#EFD6AC"
+    assert dv.theme_tokens("light")["emphasis"] == "#432534"
+    assert dv.theme_tokens("light")["series"][0] == "#C44900"
 
 
 def test_theme_tokens_are_copies():
@@ -122,14 +123,14 @@ def test_bar_highlight_uses_muted_for_others():
     assert faces[0] == dv.theme_tokens()["muted"].lower()
 
 
-def test_bar_pattern_cycles_series_colors_and_adds_texture():
+def test_bar_default_is_single_accent_color():
     d = pd.DataFrame({"k": ["A", "B", "C"], "v": [5, 3, 4]})
-    ax = dv.bar_plot(d, x="k", y="v", pattern=True)
-    series = dv.theme_tokens()["series"]
+    ax = dv.bar_plot(d, x="k", y="v")
+    accent = dv.theme_tokens()["accent"].lower()
     faces = [plt.matplotlib.colors.to_hex(p.get_facecolor()).lower()
              for p in ax.patches]
-    assert faces[:3] == [series[0].lower(), series[1].lower(), series[2].lower()]
-    assert len(ax.lines) + len(ax.collections) > 0   # clipped motif drawn inside
+    assert faces == [accent, accent, accent]     # one flat colour, no textures
+    assert len(ax.collections) == 0              # nothing clipped inside the bars
 
 
 def test_scatter_plot_returns_axes(df):

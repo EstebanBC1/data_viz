@@ -11,17 +11,17 @@ object, so the library stays easy to read, test, and debug.
 
 ## Gallery
 
-A playful, editorial, softly dimensional look — a blue-led palette (burnt
-orange for emphasis), soft raised mark shadows, quiet unframed axes, faint
-gridlines, and **hand-drawn patterned bar fills** (waves, lines, dots, grid,
-scribble) — in both light and dark themes. Run `python examples/gallery.py`.
+A clean, minimal look — a burnt-orange-led palette with cream and plum in
+support, quiet unframed axes, faint gridlines, and flat single-colour marks
+(no textures, no shadows) — in both light and dark themes. Run
+`python examples/gallery.py`.
 
-**Patterned bars** (`bar_plot(..., pattern=True)`) — each bar gets a series
-color and a clipped editorial motif, on a soft organic ribbon backdrop:
+**Single-focus bars** (`bar_plot(..., highlight="Espresso")`) — one accent bar
+carries the headline while the rest recede to grey:
 
 | Light | Dark |
 | --- | --- |
-| ![Patterned bars, light theme](docs/images/gallery-hero-light.png) | ![Patterned bars, dark theme](docs/images/gallery-hero-dark.png) |
+| ![Single-focus bars, light theme](docs/images/gallery-hero-light.png) | ![Single-focus bars, dark theme](docs/images/gallery-hero-dark.png) |
 
 **The full dashboard** for a fictional coffee company:
 
@@ -56,50 +56,52 @@ dv.missing_value_counts(df)  # missing values per column (highest first)
 
 # Each plot returns a matplotlib Axes you can keep customizing.
 dv.line_plot(df, x="month", y="revenue", fill=True, title="Revenue doubled")
-dv.hist_plot(df, column="order_value")                      # textured bars + density line
-dv.bar_plot(df, x="product", y="revenue", pattern=True)     # editorial patterned bars
-dv.bar_plot(df, x="quarter", y="growth", by_sign=True)      # blue / negative
+dv.hist_plot(df, column="order_value")                      # orange bars + density line
+dv.bar_plot(df, x="quarter", y="growth", by_sign=True)      # orange up / plum down
 dv.bar_plot(df, x="region", y="sales", highlight="West")    # one bar in focus
 dv.scatter_plot(df, x="ad_spend", y="signups", trendline=True)
 ```
 
 ## Design system
 
-The look is **playful, editorial, and softly dimensional**: blue carries most
-of the visual weight, **burnt orange is reserved for emphasis**, marks have a
-soft theme-aware drop-shadow (depth on the data, not cards around it), chart
-backgrounds are transparent and unframed, gridlines are thin and low-opacity,
-and axes stay quiet. Two themes ship: **`light`** (blue-led) and **`dark`**
-(the [Rosé Pine Moon](https://rosepinetheme.com) palette — pine, gold, love,
-foam, iris on a navy base).
+The look is **clean and minimal**: burnt orange carries the data, cream and
+plum play the supporting second colour, marks are flat (no textures, no
+shadows), chart backgrounds are transparent and unframed, gridlines are thin
+and low-opacity, and axes stay quiet. Two themes ship: **`light`** (warm paper)
+and **`dark`** (a deep warm near-black).
+
+**Colour discipline — never more than two brand hues at once.** Orange is the
+constant accent; cream and plum *alternate* as the second colour depending on
+the chart, but a single chart never shows all three together, so nothing tips
+into colour overload. Text always wears neutral ink, never a brand hue.
 
 **Color tokens** (read any with `dv.theme_tokens()`):
 
 | Token | Role |
 | --- | --- |
 | `page` | figure background |
-| `primary` / `secondary` / `muted` | text ink |
-| `accent` | primary blue — carries most of the weight |
-| `emphasis` | burnt orange — emphasis / trend lines only |
-| `negative` | negative / destructive orange-red |
-| `series` | categorical palette (blue, burnt orange, green, teal, plum) |
+| `primary` / `secondary` / `muted` | text ink (neutral, never a brand hue) |
+| `accent` | burnt orange — the constant data colour |
+| `support` | cream — soft area fills / second colour |
+| `emphasis` | plum — trend & density lines |
+| `negative` | plum — negative bars (paired with orange) |
+| `series` | ordered palette (orange, then the alternate second colours) |
 | `grid` / `baseline` | quiet gridline & axis colors |
-| `shadow_*` | the soft neomorphic drop-shadow pair |
 
-| light blue | burnt orange | green | teal | negative |
-| --- | --- | --- | --- | --- |
-| `#339CFF` | `#B4652C` | `#5DC977` | `#3AB9B1` | `#E25507` |
+| burnt orange | cream | plum (alternate) |
+| --- | --- | --- |
+| `#C44900` | `#EFD6AC` | `#432534` |
 
 Color is spent deliberately, always paired with position, a label, or a line
-so nothing relies on color alone: `bar_plot(..., by_sign=True)` colors bars
-blue (positive) / orange-red (negative); `bar_plot(..., highlight="West")`
-accents one bar and mutes the rest; `scatter_plot(..., trendline=True)` adds a
-burnt-orange regression line. Insight-led titles (`title=`) act as direct
-labels.
+so nothing relies on color alone: `line_plot(..., fill=True)` draws an orange
+line over a cream area (two colours); `bar_plot(..., by_sign=True)` colors bars
+orange (positive) / plum (negative); `bar_plot(..., highlight="West")` accents
+one bar and greys the rest; `scatter_plot(..., trendline=True)` adds a plum
+regression line. Insight-led titles (`title=`) act as direct labels.
 
-> Scope: this is a compact MVP — four chart types on a shared, patterned
-> editorial theme. Static matplotlib output, so web concepts like
-> `prefers-reduced-motion`, DOM tooltips, and keyboard focus don't apply.
+> Scope: this is a compact MVP — four chart types on a shared, minimal theme.
+> Static matplotlib output, so web concepts like `prefers-reduced-motion`, DOM
+> tooltips, and keyboard focus don't apply.
 
 ## API
 
@@ -109,10 +111,10 @@ labels.
 | `load_csv(path, **kwargs)` | Read a CSV into a DataFrame (clear error if missing). |
 | `summary_statistics(df)` | Descriptive stats for numeric columns. |
 | `missing_value_counts(df)` | Missing values per column, sorted descending. |
-| `line_plot(df, x, y, fill=False, ...)` | Rounded line + open markers with a soft shadow; `fill` adds an area tint. |
-| `hist_plot(df, column, bins=20, pattern="vertical")` | Histogram (textured bars) with a smooth density (distribution) line overlaid. |
-| `bar_plot(df, x, y, ...)` | Bars with soft depth + value labels; `by_sign`, `highlight`, `pattern` (editorial motif fills). |
-| `scatter_plot(df, x, y, trendline=False)` | Translucent points; optional burnt-orange trend line. |
+| `line_plot(df, x, y, fill=False, ...)` | Clean line + open markers; `fill` adds a cream area tint. |
+| `hist_plot(df, column, bins=20)` | Histogram (solid orange bars) with a smooth density (distribution) line overlaid. |
+| `bar_plot(df, x, y, ...)` | Flat bars + value labels; `by_sign` (orange/plum) or `highlight` (accent one, grey the rest). |
+| `scatter_plot(df, x, y, trendline=False)` | Translucent orange points; optional plum trend line. |
 
 Every plot accepts an optional `ax=` and returns the `Axes`, so you can compose
 charts onto your own figures and keep styling in your control.

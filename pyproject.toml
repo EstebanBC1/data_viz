@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "data_vizual"
-version = "0.6.0"
-description = "Bare-bones pandas helpers and styled matplotlib plots for building a personal data-visualization aesthetic."
+version = "0.7.0"
+description = "Bare-bones pandas helpers and clean, minimal matplotlib plots for building a personal data-visualization aesthetic."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
