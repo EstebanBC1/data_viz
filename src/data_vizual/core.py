@@ -180,17 +180,11 @@ def scatter_plot(df, x, y, ax=None, title=None, color=None, trendline=False):
     return _style(ax, title, x, y)
 
 def hist_plot(df, column, bins=20, ax=None, title=None, color=None):
-    """Histogram with a smooth density curve (the distribution line) overlaid:
-    solid orange bars, a plum density line — two colours, no third."""
+    """Histogram: solid orange bars, one colour, quiet chrome."""
     ax = _axes(ax)
     t = theme_tokens()
     v = np.asarray(df[column], float)
     v = v[~np.isnan(v)]
-    counts, edges, patches = ax.hist(v, bins=bins, color=color or t["accent"],
-                                     edgecolor=t["page"], linewidth=0.8)
-    g = np.linspace(v.min(), v.max(), 200)
-    h = 1.06 * v.std() * len(v) ** -0.2 or 1.0           # Silverman bandwidth
-    d = np.exp(-((g[:, None] - v) / h) ** 2 / 2).sum(1) / (len(v) * h * 2.5066)
-    ax.plot(g, d * (counts.max() / (d.max() or 1)), color=t["emphasis"],
-            linewidth=2.4, solid_capstyle="round", zorder=4)
+    ax.hist(v, bins=bins, color=color or t["accent"],
+            edgecolor=t["page"], linewidth=0.8)
     return _style(ax, title, column, "count")

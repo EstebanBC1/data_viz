@@ -143,15 +143,12 @@ def test_scatter_trendline_adds_line(df):
     assert len(ax.lines) == 1
 
 
-def test_hist_plot_has_bars_and_density_line():
+def test_hist_plot_has_bars_only():
     import numpy as np
     d = pd.DataFrame({"v": np.random.default_rng(0).normal(0, 1, 500)})
     ax = dv.hist_plot(d, column="v", bins=20)
     assert len(ax.patches) == 20        # histogram bars
-    emph = dv.theme_tokens()["emphasis"].lower()
-    density = [ln for ln in ax.lines
-               if plt.matplotlib.colors.to_hex(ln.get_color()).lower() == emph]
-    assert len(density) == 1            # exactly one overlaid density curve
+    assert len(ax.lines) == 0           # no density curve riding the bars
 
 
 def test_title_is_left_aligned(df):

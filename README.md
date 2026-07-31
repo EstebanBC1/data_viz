@@ -56,7 +56,7 @@ dv.missing_value_counts(df)  # missing values per column (highest first)
 
 # Each plot returns a matplotlib Axes you can keep customizing.
 dv.line_plot(df, x="month", y="revenue", fill=True, title="Revenue doubled")
-dv.hist_plot(df, column="order_value")                      # orange bars + density line
+dv.hist_plot(df, column="order_value")                      # solid orange bars
 dv.bar_plot(df, x="quarter", y="growth", by_sign=True)      # orange up / plum down
 dv.bar_plot(df, x="region", y="sales", highlight="West")    # one bar in focus
 dv.scatter_plot(df, x="ad_spend", y="signups", trendline=True)
@@ -112,7 +112,7 @@ regression line. Insight-led titles (`title=`) act as direct labels.
 | `summary_statistics(df)` | Descriptive stats for numeric columns. |
 | `missing_value_counts(df)` | Missing values per column, sorted descending. |
 | `line_plot(df, x, y, fill=False, ...)` | Clean line + open markers; `fill` adds a cream area tint. |
-| `hist_plot(df, column, bins=20)` | Histogram (solid orange bars) with a smooth density (distribution) line overlaid. |
+| `hist_plot(df, column, bins=20)` | Histogram — solid orange bars. |
 | `bar_plot(df, x, y, ...)` | Flat bars + value labels; `by_sign` (orange/plum) or `highlight` (accent one, grey the rest). |
 | `scatter_plot(df, x, y, trendline=False)` | Translucent orange points; optional plum trend line. |
 
