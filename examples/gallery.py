@@ -87,6 +87,10 @@ def hero(mode: str) -> plt.Figure:
     fig.set_facecolor(t["page"])
     dv.bar_plot(catalog, x="product", y="revenue", ax=ax, highlight="Espresso",
                 title="Espresso drives the catalog")
+    # The callout already names the Espresso bar, so drop its value label.
+    for txt in list(ax.texts):
+        if txt.get_text() == "48":
+            txt.remove()
     ax.set_ylim(0, 56)
     ax.annotate("Espresso contributes\n38% of product revenue",
                 xy=(0, 48), xytext=(0.8, 54), ha="left", va="top",
